@@ -31,9 +31,9 @@ export interface AutoURLDataSyncProps<Data> {
  * relevant data.
  * This HOC is usually used for components rendered by a Route.
  */
-export function autoURLDataSync<Data>(): ComponentEnhancer<
-  AutoURLDataSyncProps<Data>,
-  {}
+export function autoURLDataSync<Data, OutProps = {}>(): ComponentEnhancer<
+  AutoURLDataSyncProps<Data> & OutProps,
+  OutProps
 > {
   return compose(
     withState("data", "setData", undefined),

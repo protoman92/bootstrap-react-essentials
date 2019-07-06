@@ -39,7 +39,7 @@ describe("Enhancer chain", () => {
       )
       .compose(onlyUpdateForKeys("a", "b", "c"))
       .compose(omitKeys("setC"))
-      .checkThis((i, o) => {})
+      .compose(withState("d", "setD", 1))
       .forOutPropsOfType<EndProps>()
       .omitKeysForOutProps("a", "b", "c")
       .forOutPropsOfType<{}>();

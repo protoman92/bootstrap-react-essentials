@@ -4,6 +4,7 @@ import baseLifecyle from "recompose/lifecycle";
 import baseMapProps from "recompose/mapProps";
 import baseOnlyUpdateForKeys from "recompose/onlyUpdateForKeys";
 import baseWithState from "recompose/withState";
+import { ComponentType } from "react";
 type Enhancer<I, O> = import("recompose").ComponentEnhancer<I, O>;
 type LifecycleF<P, S, I> = import("recompose").ReactLifeCycleFunctions<P, S, I>;
 
@@ -59,10 +60,10 @@ declare module "recompose" {
  * compose, use this chain to ensure type-safeness for the final component.
  */
 interface EnhancerChain<I, O> {
-  readonly enhance: Enhancer<I, O>;
   compose<I1>(e: Enhancer<I1, I>): EnhancerChain<I1, O>;
   compose<I1>(e: ICEW<I1, I>): EnhancerChain<I1, O>;
   checkThis(fn?: (i: I, o: O) => void): EnhancerChain<I, O>;
+  enhance<I1 extends Partial<I>>(c: ComponentType<I1>): ComponentType<O>;
   forOutPropsOfType<O1>(props?: O1): EnhancerChain<I, O1>;
   omitKeysForOutProps<K extends keyof O>(
     ...keys: K[]
