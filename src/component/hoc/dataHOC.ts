@@ -14,6 +14,9 @@ export interface AutoURLDataSyncProps<Data> {
   readonly isLoadingData: boolean;
   saveData(): void;
   updateData(data: Partial<Data>): void;
+
+  /** Update URL query parameters without reloading and trigger a re-sync. */
+  updateURLQuery(query: {}): void;
 }
 
 /**
@@ -22,6 +25,7 @@ export interface AutoURLDataSyncProps<Data> {
  * URL, e.g. user navigates to /users/1, this will send a GET request to
  * /users/1, which should have a defined backend route that contains the
  * relevant data.
+ * This HOC is usually used for components rendered by a Route.
  */
 export function autoURLDataSync<Data>(): ComponentEnhancer<
   AutoURLDataSyncProps<Data>,
@@ -30,38 +34,45 @@ export function autoURLDataSync<Data>(): ComponentEnhancer<
   return compose(
     withState("data", "setData", undefined),
     withState("isLoadingData", "setIsLoadingData", false),
-    connect(({ repository: { urlDataSync } }: ReduxState) => ({
-      urlDataSync
-    })),
-    lifecycle({
-      async componentDidMount() {
-        const { setIsLoadingData, urlDataSync } = this.props as any;
-
-        try {
-          setIsLoadingData(true);
-          const data = await urlDataSync.get();
-          (this.props as any).setData(data);
-        } finally {
-          setIsLoadingData(false);
-        }
-      }
-    }),
+    connect(({ repository: { urlDataSync } }: ReduxState) => ({ urlDataSync })),
     mapProps<any, any>(
-      ({ urlDataSync, data, setData, setIsLoadingData, ...rest }) => ({
-        ...rest,
-        data,
-        saveData: async () => {
+      ({ urlDataSync, data, history, setData, setIsLoadingData, ...rest }) => {
+        const getData = async () => {
           try {
             setIsLoadingData(true);
-            const updated = await urlDataSync.update(data);
-            setData(updated);
+            const data = await urlDataSync.get();
+            setData(data);
           } finally {
             setIsLoadingData(false);
           }
-        },
-        updateData: (newData: Partial<Data>) =>
-          setData(Object.assign({}, data, newData))
-      })
-    )
+        };
+
+        return {
+          ...rest,
+          data,
+          getData,
+          saveData: async () => {
+            try {
+              setIsLoadingData(true);
+              const updated = await urlDataSync.update(data);
+              setData(updated);
+            } finally {
+              setIsLoadingData(false);
+            }
+          },
+          updateData: (newData: Partial<Data>) =>
+            setData(Object.assign({}, data, newData)),
+          updateURLQuery: async (query: {}) => {
+            await urlDataSync.updateURLQuery(query);
+            await getData();
+          }
+        };
+      }
+    ),
+    lifecycle({
+      async componentDidMount() {
+        (this.props as any).getData();
+      }
+    })
   );
 }

@@ -11,16 +11,16 @@ describe("Auto URL data sync", () => {
     readonly b: number;
     readonly c: number;
   }
-
-  let urlDataSync: Repository.URLDataSync;
   const TestComponent = createTestComponent<AutoURLDataSyncProps<Data>>();
   const EnhancedComponent = autoURLDataSync<Data>()(TestComponent);
+  let urlDataSync: Repository.URLDataSync;
   let WrappedElement: JSX.Element;
 
   beforeEach(() => {
     urlDataSync = spy<Repository.URLDataSync>({
       get: () => Promise.reject(""),
-      update: () => Promise.reject("")
+      update: () => Promise.reject(""),
+      updateURLQuery: () => Promise.reject("")
     });
 
     const testStore = createTestStore(undefined, {
@@ -92,5 +92,22 @@ describe("Auto URL data sync", () => {
     verify(urlDataSync.update(deepEqual(newData))).once();
     expect(loading2).toBeFalsy();
     expect(propData).toEqual(newData);
+  });
+
+  it("Should update URL queries correctly", async () => {
+    // Setup
+    when(urlDataSync.get()).thenResolve({});
+    when(urlDataSync.updateURLQuery(anything())).thenResolve(undefined);
+    const query = { a: 1, b: 2 };
+
+    // When
+    const wrapper = enzyme.mount(WrappedElement);
+    const { updateURLQuery } = wrapper.find(TestComponent).props();
+    updateURLQuery(query);
+    await asyncTimeout(1);
+
+    // Then
+    verify(urlDataSync.updateURLQuery(deepEqual(query)));
+    verify(urlDataSync.get()).twice();
   });
 });
