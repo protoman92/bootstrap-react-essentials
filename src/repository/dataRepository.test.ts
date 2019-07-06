@@ -91,6 +91,6 @@ describe("URL sync repository", () => {
     await urlDataSync.updateURLQuery({ a: 1 }, { b: ["2", 3] });
 
     // Then
-    verify(history.replaceState(deepEqual({}), "?a=1&b=2,3"));
+    verify(history.replaceState(deepEqual({}), "?a=1&b=2&b=3"));
   });
 });

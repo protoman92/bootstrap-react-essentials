@@ -15,17 +15,10 @@ export function createURLDataSyncRepository(
       client.patch(location.pathname, newData, { params: urlParams() }),
     updateURLQuery: async (...queries) => {
       const merged = queries
-        .map(query =>
-          Object.entries(query)
-            .map(([k, v]) => ({
-              [k]: v instanceof Array ? v.join(",") : `${v}`
-            }))
-            .reduce((acc, val) => ({ ...acc, ...val }), {})
-        )
-        .reduce((acc, val) => ({ ...acc, ...val }), {});
+        .map(query => querystring.stringify(query))
+        .join("&");
 
-      const search = `?${querystring.stringify(merged)}`;
-      history.replaceState({}, "", search);
+      history.replaceState({}, "", `?${merged}`);
     }
   };
 }
