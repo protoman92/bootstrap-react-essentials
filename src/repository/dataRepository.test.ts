@@ -87,18 +87,10 @@ describe("URL sync repository", () => {
   });
 
   it("Should update URL query correctly", async () => {
-    try {
-      // Setup
-      const query = { a: 1, b: 2 };
-      const search = `?${querystring.stringify(query)}`;
+    // Setup && When
+    await urlDataSync.updateURLQuery({ a: 1 }, { b: ["2", 3] });
 
-      // When
-      await urlDataSync.updateURLQuery(query);
-
-      // Then
-      verify(history.replaceState(deepEqual({}), "", search));
-    } catch (e) {
-      console.log(e);
-    }
+    // Then
+    verify(history.replaceState(deepEqual({}), "?a=1&b=2,3"));
   });
 });

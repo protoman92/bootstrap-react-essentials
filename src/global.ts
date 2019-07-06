@@ -48,7 +48,11 @@ declare global {
       update<T>(newData: T): Promise<T>;
 
       /** Update URL query without reloading the page. */
-      updateURLQuery(query: {}): Promise<void>;
+      updateURLQuery(
+        ...queries: readonly Readonly<{
+          [K: string]: readonly (string | number)[] | string | number;
+        }>[]
+      ): Promise<void>;
     }
   }
 

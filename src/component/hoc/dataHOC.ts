@@ -16,7 +16,11 @@ export interface AutoURLDataSyncProps<Data> {
   updateData(data: Partial<Data>): void;
 
   /** Update URL query parameters without reloading and trigger a re-sync. */
-  updateURLQuery(query: {}): void;
+  updateURLQuery(
+    ...queries: readonly Readonly<{
+      [K: string]: readonly (string | number)[] | string | number;
+    }>[]
+  ): void;
 }
 
 /**
@@ -62,8 +66,8 @@ export function autoURLDataSync<Data>(): ComponentEnhancer<
           },
           updateData: (newData: Partial<Data>) =>
             setData(Object.assign({}, data, newData)),
-          updateURLQuery: async (query: {}) => {
-            await urlDataSync.updateURLQuery(query);
+          updateURLQuery: async (...queries: readonly {}[]) => {
+            await urlDataSync.updateURLQuery(...queries);
             await getData();
           }
         };

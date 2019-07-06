@@ -13,8 +13,18 @@ export function createURLDataSyncRepository(
     get: () => client.get(location.pathname, { params: urlParams() }),
     update: newData =>
       client.patch(location.pathname, newData, { params: urlParams() }),
-    updateURLQuery: async query => {
-      const search = `?${querystring.stringify(query)}`;
+    updateURLQuery: async (...queries) => {
+      const merged = queries
+        .map(query =>
+          Object.entries(query)
+            .map(([k, v]) => ({
+              [k]: v instanceof Array ? v.join(",") : `${v}`
+            }))
+            .reduce((acc, val) => ({ ...acc, ...val }), {})
+        )
+        .reduce((acc, val) => ({ ...acc, ...val }), {});
+
+      const search = `?${querystring.stringify(merged)}`;
       history.replaceState({}, "", search);
     }
   };
