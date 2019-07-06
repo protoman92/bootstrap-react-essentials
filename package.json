@@ -2,8 +2,8 @@
   "name": "bootstrap-react-essentials",
   "version": "1.0.0",
   "description": "Library of essentials for a bootstrapped React project",
-  "main": "index.js",
   "scripts": {
+    "coveralls": "cat ./coverage/lcov.info | coveralls",
     "test": "jest"
   },
   "repository": {
@@ -28,6 +28,7 @@
     "@types/react-redux": "^7.1.1",
     "@types/recompose": "^0.30.6",
     "@types/redux": "^3.6.0",
+    "coveralls": "^3.0.4",
     "enzyme": "^3.10.0",
     "enzyme-adapter-react-16": "^1.14.0",
     "jest": "^24.8.0",
