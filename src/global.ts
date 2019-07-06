@@ -19,7 +19,7 @@ declare global {
   }
 
   namespace HTTPClient {
-    type Config = Omit<AxiosRequestConfig, "baseURL">;
+    type Config = OmitKeys<AxiosRequestConfig, "baseURL">;
   }
 
   /** Standard HTTP client that can perform API requests. */

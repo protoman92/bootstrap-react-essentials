@@ -1,10 +1,22 @@
-{
-  "os": "linux",
-  "dist": "trusty",
-  "group": "stable",
-  "script": ["npm run test"],
-  "node_js": "8",
-  "language": "node_js",
-  "after_success": ["npm run coveralls", "npm pack"],
-  "before_script": ["npm install"],
-}
+os: linux
+dist: trusty
+group: stable
+script:
+  - npm run test
+node_js: "8"
+language: node_js
+after_success:
+  - npm run coveralls
+  - npm pack
+  - npm run build
+before_script:
+  - npm install
+deploy:
+  provider: npm
+  email: swiften.svc@gmail.com
+  api_key:
+    secure: dVpV+88jEafO6e2CD5MLRW+nPNlxZOqjtf/GvFcs/AheYQB3SdsDuszO0gYwRvMm5n0p/6WmxJsTGnoIprRweWIfrKS9IywVR4jVdebWn5OQZ3hVOR8Gt0yE71nhbv4OkegxvcU/3JkKip0a1GTOwpfSyWvDqyqeQQr1/KFpKq5/iwiglBsgdo9XdH1pEk0LcGhuWGwdDk1Zfbhx94GEVqyduXe2dPFfJrS6hqEv9cCWRZ7+bmdznqRZi73Phw6CGFEgkcXwZIAmE3X6MXPxTu90uyeZc3Ka+dpsOLmLu4ci1IQHcD5sP46Q88n++8nooE55CkXEYBGrq5wJB9JoLBJ+YeSeBy8xcK3riQY4TvdJKBbpyoX9SRHrzTrUu5fP0DYGl+ABU9UumGdZyoI4UWBhEXajoAmyhfnFOaJw8tSrDhygqyF3tEFrGL4W6epr+4qhMN2XryYhfhiQzoGi30LT+ur/8t7dkO/le7vVfpz/XSqJWpT2WVVyiVDFGirJQwVVBBcJj6E9ES/GBc1EY9XPdEgRQCPkSfPxfdJt7gzd72bCJW7SRLSBsK+EcBQ3K+1ftCz0yieajzDKxFoqOblHu5qGJgnZ65bE95UpkSObP8U4yZ5MWC9+ePlXx4tX/nb/OE6N7CoW/eYXHjTjg4dTVtsS3nhbyJcP41g77Ks=
+  skip_cleanup: true
+  on:
+    tags: true
+    repo: protoman92/bootstrap-react-essentials

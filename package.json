@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Library of essentials for a bootstrapped React project",
   "scripts": {
+    "build": "tsc",
     "coveralls": "cat ./coverage/lcov.info | coveralls",
     "test": "jest"
   },
@@ -43,5 +44,11 @@
   "dependencies": {
     "axios": "^0.19.0",
     "recompose": "^0.30.0"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
   }
 }
