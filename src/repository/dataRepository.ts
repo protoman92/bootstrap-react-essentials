@@ -2,7 +2,7 @@ import querystring from "querystring";
 
 /** This repository allows synchronization of data with current URL. */
 export function createURLDataSyncRepository(
-  { location }: Pick<Window, "location">,
+  { history, location }: Pick<Window, "history" | "location">,
   client: RelativeHTTPClient
 ): Repository.URLDataSync {
   function urlParams() {
@@ -12,6 +12,10 @@ export function createURLDataSyncRepository(
   return {
     get: () => client.get(location.pathname, { params: urlParams() }),
     update: newData =>
-      client.patch(location.pathname, newData, { params: urlParams() })
+      client.patch(location.pathname, newData, { params: urlParams() }),
+    updateURLQuery: async query => {
+      const search = `?${querystring.stringify(query)}`;
+      history.replaceState({}, "", search);
+    }
   };
 }

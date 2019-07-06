@@ -7,10 +7,9 @@ describe("URL sync repository", () => {
   const params = { a: "1", b: "2" };
   const search = `?${querystring.stringify(params)}`;
 
-  const location = {
+  const location: Location = {
     pathname,
     search,
-    state: {},
     hash: "",
     ancestorOrigins: [] as any,
     host: "",
@@ -24,19 +23,38 @@ describe("URL sync repository", () => {
     replace: () => {}
   };
 
+  let history: History;
   let client: RelativeHTTPClient;
-  let urlSync: Repository.URLDataSync;
+  let urlDataSync: Repository.URLDataSync;
 
   beforeEach(() => {
-    client = spy<RelativeHTTPClient>({
-      get: () => Promise.reject(""),
-      post: () => Promise.reject(""),
-      patch: () => Promise.reject(""),
-      delete: () => Promise.reject(""),
-      head: () => Promise.reject("")
-    });
+    try {
+      client = spy<RelativeHTTPClient>({
+        get: () => Promise.reject(""),
+        post: () => Promise.reject(""),
+        patch: () => Promise.reject(""),
+        delete: () => Promise.reject(""),
+        head: () => Promise.reject("")
+      });
 
-    urlSync = createURLDataSyncRepository({ location }, instance(client));
+      history = spy<History>({
+        length: 0,
+        scrollRestoration: "auto",
+        state: {},
+        back: () => {},
+        forward: () => {},
+        go: () => {},
+        pushState: () => {},
+        replaceState: () => {}
+      });
+
+      urlDataSync = createURLDataSyncRepository(
+        { history: instance(history), location },
+        instance(client)
+      );
+    } catch (e) {
+      console.log(e);
+    }
   });
 
   it("Should get data correctly", async () => {
@@ -45,7 +63,7 @@ describe("URL sync repository", () => {
     when(client.get(pathname, anything())).thenResolve(data);
 
     // When
-    const result = await urlSync.get();
+    const result = await urlDataSync.get();
 
     // Then
     verify(client.get(pathname, deepEqual({ params }))).once();
@@ -58,7 +76,7 @@ describe("URL sync repository", () => {
     when(client.patch(pathname, anything(), anything())).thenResolve(data);
 
     // When
-    const result = await urlSync.update(data);
+    const result = await urlDataSync.update(data);
 
     // Then
     verify(
@@ -66,5 +84,21 @@ describe("URL sync repository", () => {
     ).once();
 
     expect(result).toEqual(data);
+  });
+
+  it("Should update URL query correctly", async () => {
+    try {
+      // Setup
+      const query = { a: 1, b: 2 };
+      const search = `?${querystring.stringify(query)}`;
+
+      // When
+      await urlDataSync.updateURLQuery(query);
+
+      // Then
+      verify(history.replaceState(deepEqual({}), "", search));
+    } catch (e) {
+      console.log(e);
+    }
   });
 });
