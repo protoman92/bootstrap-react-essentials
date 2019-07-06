@@ -68,6 +68,7 @@ interface EnhancerChain<I, O> {
     e: AutoURLDataSyncEnhancer<Data>
   ): EnhancerChain<I & AutoURLDataSyncProps<Data>, O>;
   checkThis(fn?: (i: I, o: O) => void): EnhancerChain<I, O>;
+  enhance<I1 extends I>(c: ComponentType<I1>): ComponentType<O>;
   enhance<I1 extends Partial<I>>(c: ComponentType<I1>): ComponentType<O>;
   forOutPropsOfType<O1>(props?: O1): EnhancerChain<I, O1>;
   omitKeysForOutProps<K extends keyof O>(
@@ -86,7 +87,7 @@ export function createEnhancerChain<I = {}, O = {}>(): EnhancerChain<I, O> {
     },
     checkThis: () => enhancerChain,
     forOutPropsOfType: () => enhancerChain as any,
-    enhance: c => compose<any, any>(...enhancers)(c),
+    enhance: (c: any) => compose<any, any>(...enhancers)(c),
     omitKeysForOutProps: () => enhancerChain as any
   };
 
