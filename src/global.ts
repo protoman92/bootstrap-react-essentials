@@ -14,7 +14,7 @@ declare global {
   }
 
   /** Common Redux action type that contains a payload. */
-  interface ReduxAction<Payload> extends Action<string> {
+  interface ReduxAction<Payload = unknown> extends Action<string> {
     payload: Payload;
   }
 
