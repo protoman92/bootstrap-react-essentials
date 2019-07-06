@@ -27,6 +27,8 @@ declare global {
     get<T>(url: string, c?: HTTPClient.Config): Promise<T>;
     post<T>(url: string, body: unknown, c?: HTTPClient.Config): Promise<T>;
     patch<T>(url: string, body: unknown, c?: HTTPClient.Config): Promise<T>;
+    delete<T>(url: string, body: unknown, c?: HTTPClient.Config): Promise<T>;
+    head<T>(url: string, c?: HTTPClient.Config): Promise<T>;
   }
 
   /**

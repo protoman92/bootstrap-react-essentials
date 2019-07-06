@@ -28,10 +28,12 @@ describe("URL sync repository", () => {
   let urlSync: Repository.URLDataSync;
 
   beforeEach(() => {
-    client = spy({
+    client = spy<RelativeHTTPClient>({
       get: () => Promise.reject(""),
       post: () => Promise.reject(""),
-      patch: () => Promise.reject("")
+      patch: () => Promise.reject(""),
+      delete: () => Promise.reject(""),
+      head: () => Promise.reject("")
     });
 
     urlSync = createURLDataSyncRepository({ location }, instance(client));
