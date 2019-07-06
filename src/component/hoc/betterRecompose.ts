@@ -5,8 +5,8 @@ import baseLifecyle from "recompose/lifecycle";
 import baseMapProps from "recompose/mapProps";
 import baseOnlyUpdateForKeys from "recompose/onlyUpdateForKeys";
 import baseWithState from "recompose/withState";
+import { AutoURLDataSyncEnhancer, AutoURLDataSyncProps } from "./dataHOC";
 type Enhancer<I, O> = import("recompose").ComponentEnhancer<I, O>;
-type FunctionalEnhancer<I, O> = (c: ComponentType<I>) => ComponentType<O>;
 type LifecycleF<P, S, I> = import("recompose").ReactLifeCycleFunctions<P, S, I>;
 
 declare module "recompose" {
@@ -64,6 +64,9 @@ interface EnhancerChain<I, O> {
   compose<I1>(e: Enhancer<I1, I>): EnhancerChain<I1, O>;
   compose<I1>(e: FunctionalEnhancer<I1, I>): EnhancerChain<I1, O>;
   compose<I1>(e: ICEW<I1, I>): EnhancerChain<I1, O>;
+  compose<Data>(
+    e: AutoURLDataSyncEnhancer<Data>
+  ): EnhancerChain<I & AutoURLDataSyncProps<Data>, O>;
   checkThis(fn?: (i: I, o: O) => void): EnhancerChain<I, O>;
   enhance<I1 extends Partial<I>>(c: ComponentType<I1>): ComponentType<O>;
   forOutPropsOfType<O1>(props?: O1): EnhancerChain<I, O1>;
@@ -74,12 +77,12 @@ interface EnhancerChain<I, O> {
 
 /** Create an enhancer chain. */
 export function createEnhancerChain<I = {}, O = {}>(): EnhancerChain<I, O> {
-  const enhancers: Function[] = [];
+  const enhancers: any[] = [];
 
   const enhancerChain: EnhancerChain<I, O> = {
     compose: (e: Function) => {
       enhancers.push(e);
-      return enhancerChain;
+      return enhancerChain as any;
     },
     checkThis: () => enhancerChain,
     forOutPropsOfType: () => enhancerChain as any,

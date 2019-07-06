@@ -1,6 +1,6 @@
 import { AxiosRequestConfig } from "axios";
-import { Action } from "redux";
 import { ComponentType } from "react";
+import { Action } from "redux";
 
 declare module "recompose" {}
 
@@ -10,6 +10,7 @@ declare global {
   type DeepRequired<T> = import("ts-essentials").DeepRequired<T>;
   type DeepReadonly<T> = import("ts-essentials").DeepReadonly<T>;
   type DeepWriteable<T> = import("ts-essentials").DeepWritable<T>;
+  type FunctionalEnhancer<I, O> = (c: ComponentType<I>) => ComponentType<O>;
 
   /** Common Redux state type that contains some basic properties. */
   interface ReduxState {

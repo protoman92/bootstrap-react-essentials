@@ -23,6 +23,9 @@ export interface AutoURLDataSyncProps<Data> {
   ): void;
 }
 
+export interface AutoURLDataSyncEnhancer<Data>
+  extends FunctionalEnhancer<AutoURLDataSyncProps<Data>, {}> {}
+
 /**
  * Automatically sync with current URL by requesting data from server using
  * said URL. This is assuming there is data provided by the server at current
@@ -31,10 +34,7 @@ export interface AutoURLDataSyncProps<Data> {
  * relevant data.
  * This HOC is usually used for components rendered by a Route.
  */
-export function autoURLDataSync<Data, OutProps = {}>(): ComponentEnhancer<
-  AutoURLDataSyncProps<Data> & OutProps,
-  OutProps
-> {
+export function autoURLDataSync<Data>(): AutoURLDataSyncEnhancer<Data> {
   return compose(
     withState("data", "setData", undefined),
     withState("isLoadingData", "setIsLoadingData", false),
