@@ -1,11 +1,12 @@
+import { ComponentType } from "react";
 import { InferableComponentEnhancerWithProps as ICEW } from "react-redux";
 import compose from "recompose/compose";
 import baseLifecyle from "recompose/lifecycle";
 import baseMapProps from "recompose/mapProps";
 import baseOnlyUpdateForKeys from "recompose/onlyUpdateForKeys";
 import baseWithState from "recompose/withState";
-import { ComponentType } from "react";
 type Enhancer<I, O> = import("recompose").ComponentEnhancer<I, O>;
+type FunctionalEnhancer<I, O> = (c: ComponentType<I>) => ComponentType<O>;
 type LifecycleF<P, S, I> = import("recompose").ReactLifeCycleFunctions<P, S, I>;
 
 declare module "recompose" {
@@ -61,6 +62,7 @@ declare module "recompose" {
  */
 interface EnhancerChain<I, O> {
   compose<I1>(e: Enhancer<I1, I>): EnhancerChain<I1, O>;
+  compose<I1>(e: FunctionalEnhancer<I1, I>): EnhancerChain<I1, O>;
   compose<I1>(e: ICEW<I1, I>): EnhancerChain<I1, O>;
   checkThis(fn?: (i: I, o: O) => void): EnhancerChain<I, O>;
   enhance<I1 extends Partial<I>>(c: ComponentType<I1>): ComponentType<O>;

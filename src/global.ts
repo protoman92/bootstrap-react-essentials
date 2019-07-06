@@ -1,5 +1,8 @@
 import { AxiosRequestConfig } from "axios";
 import { Action } from "redux";
+import { ComponentType } from "react";
+
+declare module "recompose" {}
 
 declare global {
   type OmitKeys<T, K extends keyof T> = import("ts-essentials").Omit<T, K>;
