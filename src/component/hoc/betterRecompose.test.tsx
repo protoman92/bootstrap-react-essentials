@@ -1,7 +1,7 @@
 import { mount } from "enzyme";
 import React from "react";
 import { mapProps } from "recompose";
-import { createTestComponent } from "testUtils";
+import { createTestComponent } from "../../testUtils";
 import {
   createEnhancerChain,
   lifecycle,

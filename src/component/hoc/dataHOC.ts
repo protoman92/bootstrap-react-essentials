@@ -1,6 +1,6 @@
 import { connect } from "react-redux";
 import { mapProps } from "recompose";
-import { mergeQueryMaps } from "utils";
+import { mergeQueryMaps } from "../../utils";
 import { createEnhancerChain, lifecycle, withState } from "./betterRecompose";
 
 export interface AutoURLDataSyncRepository {}

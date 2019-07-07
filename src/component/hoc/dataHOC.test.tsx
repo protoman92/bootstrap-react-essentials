@@ -1,8 +1,12 @@
 import enzyme from "enzyme";
 import React from "react";
 import { Provider } from "react-redux";
-import { asyncTimeout, createTestComponent, createTestStore } from "testUtils";
 import { anything, deepEqual, instance, spy, verify, when } from "ts-mockito";
+import {
+  asyncTimeout,
+  createTestComponent,
+  createTestStore
+} from "../../testUtils";
 import { autoURLDataSync, AutoURLDataSyncProps } from "./dataHOC";
 
 describe("Auto URL data sync", () => {
