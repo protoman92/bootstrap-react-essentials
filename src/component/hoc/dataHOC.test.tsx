@@ -38,24 +38,25 @@ describe("Auto URL data sync", () => {
   it("Should perform get automatically", async () => {
     // Setup
     const data: Data = { a: 0, b: 1, c: 2 };
+    const query = { a: "1", b: "2" };
     when(urlDataSync.get()).thenResolve(data);
+    when(urlDataSync.getURLQuery()).thenResolve(query);
 
     // When
     const wrapper = enzyme.mount(WrappedElement);
-    const { isLoadingData: loading1 } = wrapper.find(TestComponent).props();
-    expect(loading1).toBeTruthy();
-
     await asyncTimeout(1);
-    wrapper.setProps({});
 
-    const { data: propData, isLoadingData: loading2 } = wrapper
+    wrapper.setProps({});
+    const { data: result, isLoadingData, urlQuery } = wrapper
       .find(TestComponent)
       .props();
 
     // Then
     verify(urlDataSync.get()).once();
-    expect(loading2).toBeFalsy();
-    expect(propData).toEqual(data);
+    verify(urlDataSync.getURLQuery()).once();
+    expect(isLoadingData).toBeFalsy();
+    expect(result).toEqual(data);
+    expect(urlQuery).toEqual(query);
   });
 
   it("Should perform save correctly", async () => {
@@ -64,25 +65,28 @@ describe("Auto URL data sync", () => {
     const newData: Data = { a: 1, b: 2, c: 3 };
     when(urlDataSync.get()).thenResolve(data);
     when(urlDataSync.update(anything())).thenResolve(newData);
+    when(urlDataSync.getURLQuery()).thenResolve({});
 
     // When
     const wrapper = enzyme.mount(WrappedElement);
     await asyncTimeout(1);
+
     wrapper.setProps({});
     const { updateData } = wrapper.find(TestComponent).props();
     updateData(newData);
+    await asyncTimeout(1);
 
     wrapper.setProps({});
     const { saveData } = wrapper.find(TestComponent).props();
     saveData();
+
     wrapper.setProps({});
     const { isLoadingData: loading1 } = wrapper.find(TestComponent).props();
     expect(loading1).toBeTruthy();
     await asyncTimeout(1);
 
     wrapper.setProps({});
-
-    const { data: propData, isLoadingData: loading2 } = wrapper
+    const { data: result, isLoadingData: loading2 } = wrapper
       .find(TestComponent)
       .props();
 
@@ -92,38 +96,32 @@ describe("Auto URL data sync", () => {
     verify(urlDataSync.get()).once();
     verify(urlDataSync.update(deepEqual(newData))).once();
     expect(loading2).toBeFalsy();
-    expect(propData).toEqual(newData);
+    expect(result).toEqual(newData);
   });
 
   it("Should update URL queries correctly", async () => {
     // Setup
     when(urlDataSync.get()).thenResolve({});
+    when(urlDataSync.getURLQuery()).thenResolve({});
     when(urlDataSync.updateURLQuery(anything())).thenResolve(undefined);
     const query = { a: "1", b: "2" };
 
     // When
     const wrapper = enzyme.mount(WrappedElement);
+    await asyncTimeout(1);
+
+    wrapper.setProps({});
     const { updateURLQuery } = wrapper.find(TestComponent).props();
     updateURLQuery(query);
     await asyncTimeout(1);
 
+    wrapper.setProps({});
+    const { urlQuery } = wrapper.find(TestComponent).props();
+
     // Then
-    verify(urlDataSync.updateURLQuery(deepEqual(query)));
     verify(urlDataSync.get()).twice();
-  });
-
-  it("Should get URL query correctly", async () => {
-    // Setup
-    const query = { a: "1", b: "2" };
-    when(urlDataSync.get()).thenResolve({});
-    when(urlDataSync.getURLQuery()).thenResolve(query);
-
-    // When
-    const wrapper = enzyme.mount(WrappedElement);
-    const { getURLQuery } = wrapper.find(TestComponent).props();
-    const result = await getURLQuery();
-
-    // Then
-    expect(result).toEqual(query);
+    verify(urlDataSync.getURLQuery()).once();
+    verify(urlDataSync.updateURLQuery(deepEqual(query)));
+    expect(urlQuery).toEqual(query);
   });
 });

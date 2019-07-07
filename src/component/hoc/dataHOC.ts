@@ -1,17 +1,19 @@
 import { connect } from "react-redux";
-import { compose, lifecycle, mapProps, withState } from "recompose";
+import { mapProps } from "recompose";
+import { mergeQueryMaps } from "utils";
+import { createEnhancerChain, lifecycle, withState } from "./betterRecompose";
 
 export interface AutoURLDataSyncRepository {}
 
 export interface AutoURLDataSyncProps<Data> {
   readonly data: Data | null | undefined;
   readonly isLoadingData: boolean;
+  readonly urlQuery: URLQueryMap;
   saveData(): void;
   updateData(data: Partial<Data>): void;
 
   /** Update URL query parameters without reloading and trigger a re-sync. */
   updateURLQuery(...queries: readonly URLQueryMap[]): void;
-  getURLQuery(): Promise<URLQueryMap>;
 }
 
 export interface AutoURLDataSyncEnhancer<Data>
@@ -26,49 +28,69 @@ export interface AutoURLDataSyncEnhancer<Data>
  * This HOC is usually used for components rendered by a Route.
  */
 export function autoURLDataSync<Data>(): AutoURLDataSyncEnhancer<Data> {
-  return compose(
-    withState("data", "setData", undefined),
-    withState("isLoadingData", "setIsLoadingData", false),
-    connect(({ repository: { urlDataSync } }: ReduxState) => ({ urlDataSync })),
-    mapProps<any, any>(
-      ({ urlDataSync, data, history, setData, setIsLoadingData, ...rest }) => {
-        const getData = async () => {
-          try {
-            setIsLoadingData(true);
-            const data = await urlDataSync.get();
-            setData(data);
-          } finally {
-            setIsLoadingData(false);
-          }
-        };
-
-        return {
-          ...rest,
+  return createEnhancerChain()
+    .compose(
+      connect(({ repository: { urlDataSync } }: ReduxState) => ({
+        urlDataSync
+      }))
+    )
+    .compose(withState("data", "setData", undefined as Data | undefined))
+    .compose(withState("isLoadingData", "setIsLoadingData", false))
+    .compose(withState("urlQuery", "setURLQuery", {} as URLQueryMap))
+    .compose(
+      mapProps(
+        ({
+          urlDataSync,
           data,
-          getData,
-          saveData: async () => {
+          setData,
+          setIsLoadingData,
+          setURLQuery,
+          ...rest
+        }) => {
+          const getData = async () => {
             try {
               setIsLoadingData(true);
-              const updated = await urlDataSync.update(data);
-              setData(updated);
+              const newData = await urlDataSync.get<Data>();
+              setData(newData);
             } finally {
               setIsLoadingData(false);
             }
-          },
-          updateData: (newData: Partial<Data>) =>
-            setData(Object.assign({}, data, newData)),
-          updateURLQuery: async (...queries: readonly URLQueryMap[]) => {
-            await urlDataSync.updateURLQuery(...queries);
-            await getData();
-          },
-          getURLQuery: () => urlDataSync.getURLQuery()
-        };
-      }
-    ),
-    lifecycle({
-      async componentDidMount() {
-        (this.props as any).getData();
-      }
-    })
-  );
+          };
+
+          return {
+            ...rest,
+            data,
+            getData,
+            setURLQuery,
+            urlDataSync,
+            saveData: async () => {
+              try {
+                setIsLoadingData(true);
+                const updated = await urlDataSync.update(data);
+                setData(updated);
+              } finally {
+                setIsLoadingData(false);
+              }
+            },
+            updateData: (newData: Partial<Data>) =>
+              setData(Object.assign({}, data, newData)),
+            updateURLQuery: async (...queries: readonly URLQueryMap[]) => {
+              setURLQuery(mergeQueryMaps(...queries));
+              await urlDataSync.updateURLQuery(...queries);
+              await getData();
+            }
+          };
+        }
+      )
+    )
+    .compose(
+      lifecycle({
+        async componentDidMount() {
+          const { urlDataSync, getData, setURLQuery } = this.props;
+          const query = await urlDataSync.getURLQuery();
+          setURLQuery(query);
+          await getData();
+        }
+      })
+    ).enhance;
 }
