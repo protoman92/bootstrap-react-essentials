@@ -12,6 +12,10 @@ declare global {
   type DeepWriteable<T> = import("ts-essentials").DeepWritable<T>;
   type FunctionalEnhancer<I, O> = (c: ComponentType<I>) => ComponentType<O>;
 
+  type URLQueryMap = Readonly<{
+    [K: string]: readonly (string | number)[] | string | number;
+  }>;
+
   /** Common Redux state type that contains some basic properties. */
   interface ReduxState {
     readonly repository: Repository;
@@ -52,11 +56,7 @@ declare global {
       update<T>(newData: T): Promise<T>;
 
       /** Update URL query without reloading the page. */
-      updateURLQuery(
-        ...queries: readonly Readonly<{
-          [K: string]: readonly (string | number)[] | string | number;
-        }>[]
-      ): Promise<void>;
+      updateURLQuery(...queries: readonly URLQueryMap[]): Promise<void>;
     }
   }
 

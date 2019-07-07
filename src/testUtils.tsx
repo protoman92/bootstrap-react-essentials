@@ -4,6 +4,7 @@ import { DeepPartial } from "ts-essentials";
 
 type SideEffectDispatch = (...args: Parameters<Dispatch>) => void;
 
+/* istanbul ignore next */
 export function asyncTimeout<T extends any[]>(
   ms: number,
   ...args: T
@@ -13,6 +14,7 @@ export function asyncTimeout<T extends any[]>(
   });
 }
 
+/* istanbul ignore next */
 /** Create a test store that overrides some properties from the base store. */
 export function createTestStore(
   dispatch?: SideEffectDispatch,
@@ -31,6 +33,7 @@ export function createTestStore(
   } as Store<ReduxState>;
 }
 
+/* istanbul ignore next */
 export function createTestComponent<Props>(): ComponentType<Props> {
   return props => {
     // console.info("Props for test component:\n", props);
