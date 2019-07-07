@@ -19,6 +19,10 @@ export function createURLDataSyncRepository(
         .join("&");
 
       history.replaceState({}, "", `?${merged}`);
+    },
+    getURLQuery: async () => {
+      const { search } = location;
+      return querystring.parse(search.slice(1));
     }
   };
 }

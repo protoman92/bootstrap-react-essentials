@@ -13,7 +13,7 @@ declare global {
   type FunctionalEnhancer<I, O> = (c: ComponentType<I>) => ComponentType<O>;
 
   type URLQueryMap = Readonly<{
-    [K: string]: readonly (string | number)[] | string | number;
+    [K: string]: readonly (string)[] | string;
   }>;
 
   /** Common Redux state type that contains some basic properties. */
@@ -57,6 +57,7 @@ declare global {
 
       /** Update URL query without reloading the page. */
       updateURLQuery(...queries: readonly URLQueryMap[]): Promise<void>;
+      getURLQuery(): Promise<URLQueryMap>;
     }
   }
 

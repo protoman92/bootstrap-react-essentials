@@ -4,8 +4,8 @@ describe("Utilities", () => {
   it("Merge query maps should work", async () => {
     // Setup && When
     const merged = mergeQueryMaps(
-      { a: [1, 2, 3], b: 1, c: 1 },
-      { a: [1, 2, 3], b: [2, 3], c: 1 }
+      { a: ["1", "2", "3"], b: "1", c: "1" },
+      { a: ["1", "2", "3"], b: ["2", "3"], c: "1" }
     );
 
     // Then

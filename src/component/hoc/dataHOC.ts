@@ -1,11 +1,5 @@
 import { connect } from "react-redux";
-import {
-  ComponentEnhancer,
-  compose,
-  lifecycle,
-  mapProps,
-  withState
-} from "recompose";
+import { compose, lifecycle, mapProps, withState } from "recompose";
 
 export interface AutoURLDataSyncRepository {}
 
@@ -17,6 +11,7 @@ export interface AutoURLDataSyncProps<Data> {
 
   /** Update URL query parameters without reloading and trigger a re-sync. */
   updateURLQuery(...queries: readonly URLQueryMap[]): void;
+  getURLQuery(): Promise<URLQueryMap>;
 }
 
 export interface AutoURLDataSyncEnhancer<Data>
@@ -65,7 +60,8 @@ export function autoURLDataSync<Data>(): AutoURLDataSyncEnhancer<Data> {
           updateURLQuery: async (...queries: readonly URLQueryMap[]) => {
             await urlDataSync.updateURLQuery(...queries);
             await getData();
-          }
+          },
+          getURLQuery: () => urlDataSync.getURLQuery()
         };
       }
     ),

@@ -20,7 +20,8 @@ describe("Auto URL data sync", () => {
     urlDataSync = spy<Repository.URLDataSync>({
       get: () => Promise.reject(""),
       update: () => Promise.reject(""),
-      updateURLQuery: () => Promise.reject("")
+      updateURLQuery: () => Promise.reject(""),
+      getURLQuery: () => Promise.reject("")
     });
 
     const testStore = createTestStore(undefined, {
@@ -98,7 +99,7 @@ describe("Auto URL data sync", () => {
     // Setup
     when(urlDataSync.get()).thenResolve({});
     when(urlDataSync.updateURLQuery(anything())).thenResolve(undefined);
-    const query = { a: 1, b: 2 };
+    const query = { a: "1", b: "2" };
 
     // When
     const wrapper = enzyme.mount(WrappedElement);
@@ -109,5 +110,20 @@ describe("Auto URL data sync", () => {
     // Then
     verify(urlDataSync.updateURLQuery(deepEqual(query)));
     verify(urlDataSync.get()).twice();
+  });
+
+  it("Should get URL query correctly", async () => {
+    // Setup
+    const query = { a: "1", b: "2" };
+    when(urlDataSync.get()).thenResolve({});
+    when(urlDataSync.getURLQuery()).thenResolve(query);
+
+    // When
+    const wrapper = enzyme.mount(WrappedElement);
+    const { getURLQuery } = wrapper.find(TestComponent).props();
+    const result = await getURLQuery();
+
+    // Then
+    expect(result).toEqual(query);
   });
 });
