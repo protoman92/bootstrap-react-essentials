@@ -39,17 +39,6 @@ declare global {
     head<T>(url: string, c?: HTTPClient.Config): Promise<T>;
   }
 
-  /**
-   * Treat client and server as if originating from the same domain, and
-   * whatever URL the client is at, the server has the corresponding URL that
-   * contains the data.
-   *
-   * e.g.
-   * client -> https://localhost:8000/users/
-   * server -> https://localhost:8000/users/1
-   */
-  interface RelativeHTTPClient extends HTTPClient {}
-
   namespace Repository {
     interface URLDataSync {
       get<T>(): Promise<T>;

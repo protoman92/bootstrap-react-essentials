@@ -24,12 +24,12 @@ describe("URL sync repository", () => {
   };
 
   let history: History;
-  let client: RelativeHTTPClient;
+  let client: HTTPClient;
   let urlDataSync: Repository.URLDataSync;
 
   beforeEach(() => {
     try {
-      client = spy<RelativeHTTPClient>({
+      client = spy<HTTPClient>({
         get: () => Promise.reject(""),
         post: () => Promise.reject(""),
         patch: () => Promise.reject(""),

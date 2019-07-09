@@ -3,7 +3,7 @@ import querystring from "querystring";
 /** This repository allows synchronization of data with current URL. */
 export function createURLDataSyncRepository(
   { history, location }: Pick<Window, "history" | "location">,
-  client: RelativeHTTPClient
+  client: HTTPClient
 ): Repository.URLDataSync {
   function urlParams() {
     return { ...querystring.parse(location.search.slice(1)) };
