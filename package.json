@@ -1,6 +1,6 @@
 {
   "name": "bootstrap-react-essentials",
-  "version": "1.8.1",
+  "version": "1.9.0",
   "description": "Library of essentials for a bootstrapped React project",
   "scripts": {
     "build": "tsc",

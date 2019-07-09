@@ -1,4 +1,5 @@
 import axios from "axios";
+import { apiHost } from "../utils";
 
 export function createBaseClient(
   client: Pick<
@@ -33,18 +34,20 @@ export function createBaseClient(
 /**
  * Treat client and server as if originating from the same domain, and whatever
  * URL the client is at, the server has the corresponding URL that contains the
- * data.
+ * data. This is assuming there is a subdomain called "api" for the server at
+ * the same domain.
  *
  * e.g.
  * client -> https://localhost:8000/users/
- * server -> https://localhost:8000/users/1
+ * server -> https://api.localhost:8000/users/1
  */
 export function createRelativeClient(
   { location }: Pick<Window, "location">,
   client: HTTPClient
 ): RelativeHTTPClient {
   function getFullURL(url: string): string {
-    return `${location.origin}${url}`;
+    const { protocol, host } = location;
+    return `${protocol}://${apiHost(host)}${url}`;
   }
 
   return {

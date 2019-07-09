@@ -41,20 +41,21 @@ describe("HTTP client", () => {
 });
 
 describe("Relative HTTP client", () => {
-  const origin = "123";
+  const protocol = "https";
+  const host = "www.example.com";
 
   const location = {
-    origin,
+    protocol,
+    host,
+    origin: "",
     pathname: "",
     search: "",
     state: {},
     hash: "",
     ancestorOrigins: [] as any,
-    host: "",
     hostname: "",
     href: "",
     port: "",
-    protocol: "",
     assign: () => {},
     reload: () => {},
     replace: () => {}
@@ -76,7 +77,10 @@ describe("Relative HTTP client", () => {
   });
 
   it("Verb operations should work", async () => {
-    // Setup && When
+    // Setup
+    const origin = "https://www.api.example.com";
+
+    // When
     await relativeClient.get("");
     await relativeClient.post("", {});
     await relativeClient.patch("", {});
