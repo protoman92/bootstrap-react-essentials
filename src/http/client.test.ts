@@ -41,13 +41,12 @@ describe("HTTP client", () => {
 });
 
 describe("Relative HTTP client", () => {
-  const protocol = "https";
-  const host = "www.example.com";
+  const origin = "https://example.com";
 
   const location = {
-    protocol,
-    host,
-    origin: "",
+    origin,
+    protocol: "",
+    host: "",
     pathname: "",
     search: "",
     state: {},
@@ -78,7 +77,7 @@ describe("Relative HTTP client", () => {
 
   it("Verb operations should work", async () => {
     // Setup
-    const origin = "https://www.api.example.com";
+    const apiOrigin = "https://example.com/api";
 
     // When
     await relativeClient.get("");
@@ -88,10 +87,10 @@ describe("Relative HTTP client", () => {
     await relativeClient.head("");
 
     // Then
-    verify(httpClient.get(origin, undefined)).once();
-    verify(httpClient.post(origin, deepEqual({}), undefined)).once();
-    verify(httpClient.patch(origin, deepEqual({}), undefined)).once();
-    verify(httpClient.delete(origin, deepEqual({}), undefined)).once();
-    verify(httpClient.head(origin, undefined)).once();
+    verify(httpClient.get(apiOrigin, undefined)).once();
+    verify(httpClient.post(apiOrigin, deepEqual({}), undefined)).once();
+    verify(httpClient.patch(apiOrigin, deepEqual({}), undefined)).once();
+    verify(httpClient.delete(apiOrigin, deepEqual({}), undefined)).once();
+    verify(httpClient.head(apiOrigin, undefined)).once();
   });
 });

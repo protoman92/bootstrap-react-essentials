@@ -1,5 +1,4 @@
 import axios from "axios";
-import { apiHost } from "../utils";
 
 export function createBaseClient(
   client: Pick<
@@ -46,8 +45,8 @@ export function createRelativeClient(
   client: HTTPClient
 ): RelativeHTTPClient {
   function getFullURL(url: string): string {
-    const { protocol, host } = location;
-    return `${protocol}://${apiHost(host)}${url}`;
+    const { origin } = location;
+    return `${origin}/api${url}`;
   }
 
   return {

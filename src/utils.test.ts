@@ -1,12 +1,6 @@
-import { mergeQueryMaps, toArray, apiHost } from "./utils";
+import { mergeQueryMaps, toArray } from "./utils";
 
 describe("Utilities", () => {
-  it("API host", () => {
-    // Setup && When && Then
-    expect(apiHost("example.com")).toEqual("api.example.com");
-    expect(apiHost("www.example.com")).toEqual("www.api.example.com");
-  });
-
   it("Merge query maps should work", async () => {
     // Setup && When
     const merged = mergeQueryMaps(
