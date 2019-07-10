@@ -1,9 +1,7 @@
 import { connect } from "react-redux";
-import { mapProps } from "recompose";
+import { mapProps, withStateHandlers } from "recompose";
 import { mergeQueryMaps } from "../../utils";
-import { createEnhancerChain, lifecycle, withState } from "./betterRecompose";
-
-export interface AutoURLDataSyncRepository {}
+import { createEnhancerChain, lifecycle } from "./betterRecompose";
 
 export interface AutoURLDataSyncProps<Data> {
   readonly data: Data;
@@ -26,23 +24,37 @@ export interface AutoURLDataSyncEnhancer<Data>
  * URL, e.g. user navigates to /users/1, this will send a GET request to
  * /users/1, which should have a defined backend route that contains the
  * relevant data.
- * This HOC is usually used for components rendered by a Route.
- * Please make sure when implementing the backend to handle these requests
- * that it never returns null/undefined (as per REST design standards).
+ *
+ * This HOC is usually used for components rendered by a Route. Please make sure
+ * when implementing the backend to handle these requests that it never returns
+ * null/undefined (as per REST design standards).
  */
 export function autoURLDataSync<Data>(
   initial: Data
 ): AutoURLDataSyncEnhancer<Data> {
   return createEnhancerChain()
     .compose(
-      connect(({ repository: { urlDataSync } }: ReduxState) => ({
-        urlDataSync
-      }))
+      connect(
+        ({ repository: { urlDataSync } }: ReduxState) => ({ urlDataSync }),
+        () => ({})
+      )
     )
-    .compose(withState("data", "setData", initial))
-    .compose(withState("dataError", "setDataError", null as Error | null))
-    .compose(withState("isLoadingData", "setIsLoadingData", false))
-    .compose(withState("urlQuery", "setURLQuery", {} as URLQueryMap))
+    .compose(
+      withStateHandlers(
+        {
+          data: initial,
+          dataError: undefined as Error | undefined,
+          isLoadingData: false,
+          urlQuery: {} as URLQueryMap
+        },
+        {
+          setData: () => data => ({ data }),
+          setDataError: () => dataError => ({ dataError }),
+          setIsLoadingData: () => isLoadingData => ({ isLoadingData }),
+          setURLQuery: () => urlQuery => ({ urlQuery })
+        }
+      )
+    )
     .compose(
       mapProps(
         ({
@@ -54,17 +66,24 @@ export function autoURLDataSync<Data>(
           setURLQuery,
           ...rest
         }) => {
-          const getData = async () => {
+          async function callAPI<T>(
+            callFn: () => Promise<T>,
+            successFn: (res: T) => void
+          ) {
+            setDataError(undefined);
+            setIsLoadingData(true);
+
             try {
-              setIsLoadingData(true);
-              const newData = await urlDataSync.get<Data>();
-              setData(newData);
+              const res = await callFn();
+              successFn(res);
             } catch (e) {
               setDataError(e);
             } finally {
               setIsLoadingData(false);
             }
-          };
+          }
+
+          const getData = () => callAPI(() => urlDataSync.get(), setData);
 
           return {
             ...rest,
@@ -72,17 +91,7 @@ export function autoURLDataSync<Data>(
             getData,
             setURLQuery,
             urlDataSync,
-            saveData: async () => {
-              try {
-                setIsLoadingData(true);
-                const updated = await urlDataSync.update(data);
-                setData(updated);
-              } catch (e) {
-                setDataError(e);
-              } finally {
-                setIsLoadingData(false);
-              }
-            },
+            saveData: () => callAPI(() => urlDataSync.update(data), setData),
             updateData: (newData: Partial<Data>) =>
               setData(Object.assign({}, data, newData)),
             updateURLQuery: async (...queries: readonly URLQueryMap[]) => {

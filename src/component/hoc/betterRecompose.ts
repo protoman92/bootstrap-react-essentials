@@ -6,6 +6,7 @@ import baseMapProps from "recompose/mapProps";
 import baseOnlyUpdateForKeys from "recompose/onlyUpdateForKeys";
 import baseWithState from "recompose/withState";
 import { AutoURLDataSyncEnhancer, AutoURLDataSyncProps } from "./dataHOC";
+
 type Enhancer<I, O> = import("recompose").ComponentEnhancer<I, O>;
 type LifecycleF<P, S, I> = import("recompose").ReactLifeCycleFunctions<P, S, I>;
 
