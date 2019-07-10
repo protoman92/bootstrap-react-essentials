@@ -15,8 +15,10 @@ describe("Auto URL data sync", () => {
     readonly b: number;
     readonly c: number;
   }
+
+  const initial: Data = { a: 0, b: 0, c: 0 };
   const TestComponent = createTestComponent<AutoURLDataSyncProps<Data>>();
-  const EnhancedComponent = autoURLDataSync<Data>()(TestComponent);
+  const EnhancedComponent = autoURLDataSync<Data>(initial)(TestComponent);
   let urlDataSync: Repository.URLDataSync;
   let WrappedElement: JSX.Element;
 
@@ -127,5 +129,45 @@ describe("Auto URL data sync", () => {
     verify(urlDataSync.getURLQuery()).once();
     verify(urlDataSync.updateURLQuery(deepEqual(query)));
     expect(urlQuery).toEqual(query);
+  });
+
+  it("Should set error when getting data fails", async () => {
+    // Setup
+    const error = new Error("error!");
+    when(urlDataSync.get()).thenReject(error);
+    when(urlDataSync.getURLQuery()).thenResolve({});
+
+    // When
+    const wrapper = enzyme.mount(WrappedElement);
+    await asyncTimeout(1);
+
+    wrapper.setProps({});
+    const { dataError } = wrapper.find(TestComponent).props();
+
+    // Then
+    expect(dataError).toEqual(error);
+  });
+
+  it("Should set error when saving fails", async () => {
+    // Setup
+    const error = new Error("error!");
+    when(urlDataSync.get()).thenResolve({});
+    when(urlDataSync.getURLQuery()).thenResolve({});
+    when(urlDataSync.update(anything())).thenReject(error);
+
+    // When
+    const wrapper = enzyme.mount(WrappedElement);
+    await asyncTimeout(1);
+
+    wrapper.setProps({});
+    const { saveData } = wrapper.find(TestComponent).props();
+    saveData();
+    await asyncTimeout(1);
+
+    wrapper.setProps({});
+    const { dataError } = wrapper.find(TestComponent).props();
+
+    // Then
+    expect(dataError).toEqual(error);
   });
 });

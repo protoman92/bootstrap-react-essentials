@@ -6,7 +6,8 @@ import { createEnhancerChain, lifecycle, withState } from "./betterRecompose";
 export interface AutoURLDataSyncRepository {}
 
 export interface AutoURLDataSyncProps<Data> {
-  readonly data: Data | null | undefined;
+  readonly data: Data;
+  readonly dataError: Error | null | undefined;
   readonly isLoadingData: boolean;
   readonly urlQuery: URLQueryMap;
   saveData(): void;
@@ -26,15 +27,20 @@ export interface AutoURLDataSyncEnhancer<Data>
  * /users/1, which should have a defined backend route that contains the
  * relevant data.
  * This HOC is usually used for components rendered by a Route.
+ * Please make sure when implementing the backend to handle these requests
+ * that it never returns null/undefined (as per REST design standards).
  */
-export function autoURLDataSync<Data>(): AutoURLDataSyncEnhancer<Data> {
+export function autoURLDataSync<Data>(
+  initial: Data
+): AutoURLDataSyncEnhancer<Data> {
   return createEnhancerChain()
     .compose(
       connect(({ repository: { urlDataSync } }: ReduxState) => ({
         urlDataSync
       }))
     )
-    .compose(withState("data", "setData", undefined as Data | undefined))
+    .compose(withState("data", "setData", initial))
+    .compose(withState("dataError", "setDataError", null as Error | null))
     .compose(withState("isLoadingData", "setIsLoadingData", false))
     .compose(withState("urlQuery", "setURLQuery", {} as URLQueryMap))
     .compose(
@@ -43,6 +49,7 @@ export function autoURLDataSync<Data>(): AutoURLDataSyncEnhancer<Data> {
           urlDataSync,
           data,
           setData,
+          setDataError,
           setIsLoadingData,
           setURLQuery,
           ...rest
@@ -52,6 +59,8 @@ export function autoURLDataSync<Data>(): AutoURLDataSyncEnhancer<Data> {
               setIsLoadingData(true);
               const newData = await urlDataSync.get<Data>();
               setData(newData);
+            } catch (e) {
+              setDataError(e);
             } finally {
               setIsLoadingData(false);
             }
@@ -68,6 +77,8 @@ export function autoURLDataSync<Data>(): AutoURLDataSyncEnhancer<Data> {
                 setIsLoadingData(true);
                 const updated = await urlDataSync.update(data);
                 setData(updated);
+              } catch (e) {
+                setDataError(e);
               } finally {
                 setIsLoadingData(false);
               }
