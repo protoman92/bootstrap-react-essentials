@@ -1,5 +1,16 @@
 import querystring from "querystring";
 
+/** Make an Array that can be sparse, i.e. have unfilled space. */
+export function createSparseArray<T>(
+  length: number,
+  ...initialData: readonly T[]
+): readonly (T | undefined)[] {
+  if (initialData.length >= length) return initialData;
+  const sparseArray: T[] = [...Array(length)];
+  initialData.forEach((datum, i) => (sparseArray[i] = datum));
+  return sparseArray;
+}
+
 /**
  * Merge query maps into one big query map, concatenating values at common
  * keys together into an Array.
