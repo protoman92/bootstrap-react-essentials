@@ -1,12 +1,7 @@
 import enzyme from "enzyme";
 import React from "react";
-import { Provider } from "react-redux";
 import { anything, deepEqual, instance, spy, verify, when } from "ts-mockito";
-import {
-  asyncTimeout,
-  createTestComponent,
-  createTestStore
-} from "../../testUtils";
+import { asyncTimeout, createTestComponent } from "../../testUtils";
 import { autoURLDataSync, AutoURLDataSyncProps } from "./dataHOC";
 
 describe("Auto URL data sync", () => {
@@ -30,15 +25,7 @@ describe("Auto URL data sync", () => {
       getURLQuery: () => Promise.reject("")
     });
 
-    const testStore = createTestStore(undefined, {
-      repository: { urlDataSync: instance(urlDataSync) }
-    });
-
-    WrappedElement = (
-      <Provider store={testStore}>
-        <EnhancedComponent />
-      </Provider>
-    );
+    WrappedElement = <EnhancedComponent urlDataSync={instance(urlDataSync)} />;
   });
 
   it("Should perform get automatically", async () => {

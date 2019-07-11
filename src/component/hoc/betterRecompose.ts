@@ -78,7 +78,7 @@ interface EnhancerChain<I, O> {
 }
 
 /** Create an enhancer chain. */
-export function createEnhancerChain<I = {}, O = {}>(): EnhancerChain<I, O> {
+export function createEnhancerChain<I = {}, O = I>(): EnhancerChain<I, O> {
   const enhancers: any[] = [];
 
   const enhancerChain: EnhancerChain<I, O> = {

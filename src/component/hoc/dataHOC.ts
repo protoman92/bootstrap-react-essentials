@@ -1,5 +1,5 @@
-import { connect } from "react-redux";
-import { mapProps, withStateHandlers } from "recompose";
+import mapProps from "recompose/mapProps";
+import withStateHandlers from "recompose/withStateHandlers";
 import { mergeQueryMaps } from "../../utils";
 import { createEnhancerChain, lifecycle } from "./betterRecompose";
 
@@ -15,8 +15,15 @@ export interface AutoURLDataSyncProps<Data> {
   updateURLQuery(...queries: readonly URLQueryMap[]): void;
 }
 
+export interface AutoURLDataSyncOutProps {
+  readonly urlDataSync: Repository.URLDataSync;
+}
+
 export interface AutoURLDataSyncEnhancer<Data>
-  extends FunctionalEnhancer<AutoURLDataSyncProps<Data>, {}> {}
+  extends FunctionalEnhancer<
+    AutoURLDataSyncProps<Data>,
+    AutoURLDataSyncOutProps
+  > {}
 
 /**
  * Automatically sync with current URL by requesting data from server using
@@ -32,13 +39,7 @@ export interface AutoURLDataSyncEnhancer<Data>
 export function autoURLDataSync<Data>(
   initial: Data
 ): AutoURLDataSyncEnhancer<Data> {
-  return createEnhancerChain()
-    .compose(
-      connect(
-        ({ repository: { urlDataSync } }: ReduxState) => ({ urlDataSync }),
-        () => ({})
-      )
-    )
+  return createEnhancerChain<AutoURLDataSyncOutProps>()
     .compose(
       withStateHandlers(
         {
