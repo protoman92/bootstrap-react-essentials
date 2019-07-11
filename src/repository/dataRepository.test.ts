@@ -105,4 +105,16 @@ describe("URL sync repository", () => {
     // Then
     expect(result).toEqual(query);
   });
+
+  it("Should add on additional query correctly", async () => {
+    // Setup
+    when(client.get(anything(), anything())).thenResolve({});
+    const query = { a: "1", b: "2" };
+
+    // When
+    await urlDataSync.get(query);
+
+    // Then
+    verify(client.get(anything(), deepEqual({ params: query }))).once();
+  });
 });

@@ -51,8 +51,14 @@ declare global {
   interface RelativeHTTPClient extends HTTPClient {}
 
   namespace Repository {
+    namespace URLDataSync {
+      interface AdditionalQuery {
+        readonly [K: string]: unknown;
+      }
+    }
+
     interface URLDataSync {
-      get<T>(): Promise<T>;
+      get<T>(additionalQuery?: URLDataSync.AdditionalQuery): Promise<T>;
       update<T>(newData: T): Promise<T>;
 
       /** Update URL query without reloading the page. */

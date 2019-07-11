@@ -5,12 +5,16 @@ export function createURLDataSyncRepository(
   { history, location }: Pick<Window, "history" | "location">,
   client: RelativeHTTPClient
 ): Repository.URLDataSync {
-  function urlParams() {
-    return { ...querystring.parse(location.search.slice(1)) };
+  function urlParams(additionalQuery?: Repository.URLDataSync.AdditionalQuery) {
+    return {
+      ...additionalQuery,
+      ...querystring.parse(location.search.slice(1))
+    };
   }
 
   return {
-    get: () => client.get(location.pathname, { params: urlParams() }),
+    get: additionalQuery =>
+      client.get(location.pathname, { params: urlParams(additionalQuery) }),
     update: newData =>
       client.patch(location.pathname, newData, { params: urlParams() }),
     updateURLQuery: async (...queries) => {
