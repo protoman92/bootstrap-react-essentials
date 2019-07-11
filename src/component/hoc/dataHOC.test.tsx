@@ -2,7 +2,7 @@ import enzyme from "enzyme";
 import React from "react";
 import { anything, deepEqual, instance, spy, verify, when } from "ts-mockito";
 import { asyncTimeout, createTestComponent } from "../../testUtils";
-import { autoURLDataSync, AutoURLDataSyncProps } from "./dataHOC";
+import { autoURLDataSync, AutoURLDataSyncInProps } from "./dataHOC";
 
 describe("Auto URL data sync", () => {
   interface Data {
@@ -12,7 +12,7 @@ describe("Auto URL data sync", () => {
   }
 
   const initial: Data = { a: 0, b: 0, c: 0 };
-  const TestComponent = createTestComponent<AutoURLDataSyncProps<Data>>();
+  const TestComponent = createTestComponent<AutoURLDataSyncInProps<Data>>();
   const EnhancedComponent = autoURLDataSync<Data>(initial)(TestComponent);
   let urlDataSync: Repository.URLDataSync;
   let WrappedElement: JSX.Element;

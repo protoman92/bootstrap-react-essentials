@@ -3,7 +3,9 @@ import withStateHandlers from "recompose/withStateHandlers";
 import { mergeQueryMaps } from "../../utils";
 import { createEnhancerChain, lifecycle } from "./betterRecompose";
 
-export interface AutoURLDataSyncProps<Data> {
+// ############################ AUTO URL DATA SYNC ############################
+
+export interface AutoURLDataSyncInProps<Data> {
   readonly data: Data;
   readonly dataError: Error | null | undefined;
   readonly isLoadingData: boolean;
@@ -21,7 +23,7 @@ export interface AutoURLDataSyncOutProps {
 
 export interface AutoURLDataSyncEnhancer<Data>
   extends FunctionalEnhancer<
-    AutoURLDataSyncProps<Data>,
+    AutoURLDataSyncInProps<Data>,
     AutoURLDataSyncOutProps
   > {}
 
@@ -113,5 +115,85 @@ export function autoURLDataSync<Data>(
           await getData();
         }
       })
+    ).enhance;
+}
+
+// ############################# MONGO PAGINATION #############################
+
+interface MongoCursorPaginatedData<Data> {
+  readonly results: Data;
+  readonly count: number;
+  readonly next?: string;
+  readonly previous?: string;
+}
+
+interface MongoCursorPaginationInProps extends AutoURLDataSyncOutProps {
+  readonly page: number;
+}
+
+/**
+ * This works with the auto-sync HOC to provide paginated data. It is assumed
+ * that the server will return the data in the above format - the cursor markers
+ * will be stored internally and fed the next time we perform a GET request.
+ */
+/* istanbul ignore next */
+export function mongoCursorPagination<Data>(): FunctionalEnhancer<
+  MongoCursorPaginationInProps,
+  AutoURLDataSyncOutProps
+> {
+  return createEnhancerChain<AutoURLDataSyncOutProps>()
+    .compose(
+      withStateHandlers(
+        {
+          next: "",
+          previous: "",
+          page: 0
+        },
+        {
+          setNext: () => next => ({ next }),
+          setPrevious: () => previous => ({ previous }),
+          setPage: () => page => ({ page })
+        }
+      )
+    )
+    .compose(
+      mapProps(
+        ({
+          urlDataSync,
+          next,
+          previous,
+          page,
+          setNext,
+          setPrevious,
+          setPage
+        }) => ({
+          page,
+          urlDataSync: {
+            ...urlDataSync,
+            get: async (
+              additionalQuery?: Repository.URLDataSync.AdditionalQuery
+            ) => {
+              const { results, next: n, previous: p } = await urlDataSync.get<
+                MongoCursorPaginatedData<Data>
+              >({
+                next,
+                previous,
+                ...additionalQuery
+              });
+
+              setNext(n);
+              setPrevious(p);
+
+              if (n === previous) {
+                setPage(Math.max(0, page - 1));
+              } else if (p === next) {
+                setPage(page + 1);
+              }
+
+              return results;
+            }
+          }
+        })
+      )
     ).enhance;
 }
