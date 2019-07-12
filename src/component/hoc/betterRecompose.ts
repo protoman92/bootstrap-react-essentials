@@ -8,8 +8,8 @@ import baseWithState from "recompose/withState";
 import {
   AutoURLDataSyncEnhancer,
   AutoURLDataSyncInProps,
-  MongoCursorPaginationEnhancer,
-  MongoCursorPaginationInProps
+  CursorPaginationEnhancer,
+  CursorPaginationInProps
 } from "./dataHOC";
 
 type Enhancer<I, O> = import("recompose").ComponentEnhancer<I, O>;
@@ -74,8 +74,8 @@ interface EnhancerChain<I, O> {
     e: AutoURLDataSyncEnhancer<Data>
   ): EnhancerChain<I & AutoURLDataSyncInProps<Data>, O>;
   compose<Data>(
-    e: MongoCursorPaginationEnhancer<Data>
-  ): EnhancerChain<I & MongoCursorPaginationInProps<Data>, O>;
+    e: CursorPaginationEnhancer<Data>
+  ): EnhancerChain<I & CursorPaginationInProps<Data>, O>;
   checkThis(fn?: (i: I, o: O) => void): EnhancerChain<I, O>;
   enhance<I1 extends I>(c: ComponentType<I1>): ComponentType<O>;
   enhance<I1 extends Partial<I>>(c: ComponentType<I1>): ComponentType<O>;

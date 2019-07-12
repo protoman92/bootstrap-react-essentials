@@ -128,32 +128,30 @@ export function autoURLDataSync<Data>(): AutoURLDataSyncEnhancer<Data> {
 
 // ############################# MONGO PAGINATION #############################
 
-interface MongoCursorPaginatedData<Data> {
+interface CursorPaginatedData<Data> {
   readonly results: Data;
   readonly count: number;
   readonly next?: string;
   readonly previous?: string;
 }
 
-export interface MongoCursorPaginationInProps<Data>
+export interface CursorPaginationInProps<Data>
   extends Pick<
-    AutoURLDataSyncOutProps<MongoCursorPaginatedData<Data>>,
+    AutoURLDataSyncOutProps<CursorPaginatedData<Data>>,
     "additionalDataQuery" | "onDataChange"
   > {
   readonly page: number;
 }
 
-export interface MongoCursorPaginationEnhancer<Data>
-  extends FunctionalEnhancer<MongoCursorPaginationInProps<Data>, {}> {}
+export interface CursorPaginationEnhancer<Data>
+  extends FunctionalEnhancer<CursorPaginationInProps<Data>, {}> {}
 
 /**
  * This works with the auto-sync HOC to provide paginated data. It is assumed
  * that the server will return the data in the above format - the cursor markers
  * will be stored internally and fed the next time we perform a GET request.
  */
-export function mongoCursorPagination<Data>(): MongoCursorPaginationEnhancer<
-  Data
-> {
+export function cursorPagination<Data>(): CursorPaginationEnhancer<Data> {
   return createEnhancerChain()
     .compose(
       withStateHandlers(
@@ -173,10 +171,7 @@ export function mongoCursorPagination<Data>(): MongoCursorPaginationEnhancer<
       mapProps(({ next, previous, page, setNext, setPrevious, setPage }) => ({
         additionalDataQuery: { next, previous },
         page,
-        onDataChange: ({
-          next: n,
-          previous: p
-        }: MongoCursorPaginatedData<Data>) => {
+        onDataChange: ({ next: n, previous: p }: CursorPaginatedData<Data>) => {
           setNext(n);
           setPrevious(p);
 

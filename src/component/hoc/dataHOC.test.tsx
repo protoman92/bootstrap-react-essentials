@@ -5,7 +5,7 @@ import { asyncTimeout, createTestComponent } from "../../testUtils";
 import {
   autoURLDataSync,
   AutoURLDataSyncInProps,
-  mongoCursorPagination
+  cursorPagination
 } from "./dataHOC";
 
 describe("Auto URL data sync", () => {
@@ -177,8 +177,8 @@ describe("Auto URL data sync", () => {
 });
 
 describe("Mongo cursor pagination", () => {
-  const TestComponent = createTestComponent(mongoCursorPagination);
-  const EnhancedComponent = mongoCursorPagination()(TestComponent);
+  const TestComponent = createTestComponent(cursorPagination);
+  const EnhancedComponent = cursorPagination()(TestComponent);
   let WrappedElement: JSX.Element;
 
   beforeEach(() => {
