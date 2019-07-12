@@ -9,6 +9,7 @@ import {
   onlyUpdateForKeys,
   withState
 } from "./betterRecompose";
+import { autoURLDataSync, mongoCursorPagination } from "./dataHOC";
 
 describe("Enhancer chain", () => {
   it("Should work correctly", async () => {
@@ -54,5 +55,13 @@ describe("Enhancer chain", () => {
     expect(a).toEqual(1);
     expect(b).toEqual(1);
     expect(c).toEqual(1);
+  });
+
+  it("Mongo pagination and auto URL data sync", async () => {
+    // Setup
+    createEnhancerChain()
+      .compose(mongoCursorPagination<{}>())
+      .compose(autoURLDataSync())
+      .checkThis((i, o) => i.data.results);
   });
 });

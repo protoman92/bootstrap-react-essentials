@@ -21,6 +21,7 @@ export interface AutoURLDataSyncInProps<Data> {
 export interface AutoURLDataSyncOutProps<Data> {
   /** This is used for the data synchronizer. */
   readonly additionalDataQuery?: Repository.URLDataSync.AdditionalQuery;
+  readonly initialData: Data;
   readonly urlDataSync: Repository.URLDataSync;
   readonly onDataChange?: (data: Data) => void;
 }
@@ -42,18 +43,16 @@ export interface AutoURLDataSyncEnhancer<Data>
  * when implementing the backend to handle these requests that it never returns
  * null/undefined (as per REST design standards).
  */
-export function autoURLDataSync<Data>(
-  initial: Data
-): AutoURLDataSyncEnhancer<Data> {
+export function autoURLDataSync<Data>(): AutoURLDataSyncEnhancer<Data> {
   return createEnhancerChain<AutoURLDataSyncOutProps<Data>>()
     .compose(
       withStateHandlers(
-        {
-          data: initial,
+        ({ initialData: data }) => ({
+          data,
           dataError: undefined as Error | undefined,
           isLoadingData: false,
           urlQuery: {} as URLQueryMap
-        },
+        }),
         {
           setData: (state, { onDataChange }) => data => {
             !!onDataChange && onDataChange(data);

@@ -18,7 +18,7 @@ describe("Auto URL data sync", () => {
   const initial: Data = { a: 0, b: 0, c: 0 };
   const additionalDataQuery = { a: 1, b: 2, c: 3 };
   const TestComponent = createTestComponent<AutoURLDataSyncInProps<Data>>();
-  const EnhancedComponent = autoURLDataSync<Data>(initial)(TestComponent);
+  const EnhancedComponent = autoURLDataSync<Data>()(TestComponent);
   let urlDataSync: Repository.URLDataSync;
   let WrappedElement: JSX.Element;
   let onDataChange: (data: Data) => void;
@@ -36,6 +36,7 @@ describe("Auto URL data sync", () => {
     WrappedElement = (
       <EnhancedComponent
         additionalDataQuery={additionalDataQuery}
+        initialData={initial}
         onDataChange={onDataChange}
         urlDataSync={instance(urlDataSync)}
       />
