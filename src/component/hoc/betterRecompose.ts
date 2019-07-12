@@ -5,7 +5,12 @@ import baseLifecyle from "recompose/lifecycle";
 import baseMapProps from "recompose/mapProps";
 import baseOnlyUpdateForKeys from "recompose/onlyUpdateForKeys";
 import baseWithState from "recompose/withState";
-import { AutoURLDataSyncEnhancer, AutoURLDataSyncInProps } from "./dataHOC";
+import {
+  AutoURLDataSyncEnhancer,
+  AutoURLDataSyncInProps,
+  MongoCursorPaginationEnhancer,
+  MongoCursorPaginationInProps
+} from "./dataHOC";
 
 type Enhancer<I, O> = import("recompose").ComponentEnhancer<I, O>;
 type LifecycleF<P, S, I> = import("recompose").ReactLifeCycleFunctions<P, S, I>;
@@ -68,6 +73,9 @@ interface EnhancerChain<I, O> {
   compose<Data>(
     e: AutoURLDataSyncEnhancer<Data>
   ): EnhancerChain<I & AutoURLDataSyncInProps<Data>, O>;
+  compose<Data>(
+    e: MongoCursorPaginationEnhancer<Data>
+  ): EnhancerChain<I & MongoCursorPaginationInProps<Data>, O>;
   checkThis(fn?: (i: I, o: O) => void): EnhancerChain<I, O>;
   enhance<I1 extends I>(c: ComponentType<I1>): ComponentType<O>;
   enhance<I1 extends Partial<I>>(c: ComponentType<I1>): ComponentType<O>;

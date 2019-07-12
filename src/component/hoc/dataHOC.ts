@@ -136,25 +136,26 @@ interface MongoCursorPaginatedData<Data> {
   readonly previous?: string;
 }
 
-interface MongoCursorPaginationInProps extends MongoCursorPaginationOutProps {
-  readonly additionalDataQuery: Repository.URLDataSync.AdditionalQuery;
+export interface MongoCursorPaginationInProps<Data>
+  extends Pick<
+    AutoURLDataSyncOutProps<MongoCursorPaginatedData<Data>>,
+    "additionalDataQuery" | "onDataChange"
+  > {
   readonly page: number;
 }
 
-interface MongoCursorPaginationOutProps {
-  readonly urlDataSync: Repository.URLDataSync;
-}
+export interface MongoCursorPaginationEnhancer<Data>
+  extends FunctionalEnhancer<MongoCursorPaginationInProps<Data>, {}> {}
 
 /**
  * This works with the auto-sync HOC to provide paginated data. It is assumed
  * that the server will return the data in the above format - the cursor markers
  * will be stored internally and fed the next time we perform a GET request.
  */
-export function mongoCursorPagination<Data>(): FunctionalEnhancer<
-  MongoCursorPaginationInProps,
-  MongoCursorPaginationOutProps
+export function mongoCursorPagination<Data>(): MongoCursorPaginationEnhancer<
+  Data
 > {
-  return createEnhancerChain<MongoCursorPaginationOutProps>()
+  return createEnhancerChain()
     .compose(
       withStateHandlers(
         {
@@ -170,44 +171,22 @@ export function mongoCursorPagination<Data>(): FunctionalEnhancer<
       )
     )
     .compose(
-      mapProps(
-        ({
-          urlDataSync,
-          next,
-          previous,
-          page,
-          setNext,
-          setPrevious,
-          setPage
-        }) => ({
-          page,
-          additionalDataQuery: { next, previous },
-          urlDataSync: {
-            ...urlDataSync,
-            get: async (
-              additionalQuery?: Repository.URLDataSync.AdditionalQuery
-            ) => {
-              const { results, next: n, previous: p } = await urlDataSync.get<
-                MongoCursorPaginatedData<Data>
-              >({
-                next,
-                previous,
-                ...additionalQuery
-              });
+      mapProps(({ next, previous, page, setNext, setPrevious, setPage }) => ({
+        additionalDataQuery: { next, previous },
+        page,
+        onDataChange: ({
+          next: n,
+          previous: p
+        }: MongoCursorPaginatedData<Data>) => {
+          setNext(n);
+          setPrevious(p);
 
-              setNext(n);
-              setPrevious(p);
-
-              if (n === previous) {
-                setPage(Math.max(0, page - 1));
-              } else if (p === next) {
-                setPage(page + 1);
-              }
-
-              return results;
-            }
+          if (n === previous) {
+            setPage(Math.max(0, page - 1));
+          } else if (p === next) {
+            setPage(page + 1);
           }
-        })
-      )
+        }
+      }))
     ).enhance;
 }
