@@ -16,12 +16,16 @@ describe("Auto URL data sync", () => {
   }
 
   const initial: Data = { a: 0, b: 0, c: 0 };
+  const additionalDataQuery = { a: 1, b: 2, c: 3 };
   const TestComponent = createTestComponent<AutoURLDataSyncInProps<Data>>();
   const EnhancedComponent = autoURLDataSync<Data>(initial)(TestComponent);
   let urlDataSync: Repository.URLDataSync;
   let WrappedElement: JSX.Element;
+  let onDataChange: (data: Data) => void;
 
   beforeEach(() => {
+    onDataChange = jest.fn();
+
     urlDataSync = spy<Repository.URLDataSync>({
       get: () => Promise.reject(""),
       update: () => Promise.reject(""),
@@ -29,14 +33,20 @@ describe("Auto URL data sync", () => {
       getURLQuery: () => Promise.reject("")
     });
 
-    WrappedElement = <EnhancedComponent urlDataSync={instance(urlDataSync)} />;
+    WrappedElement = (
+      <EnhancedComponent
+        additionalDataQuery={additionalDataQuery}
+        onDataChange={onDataChange}
+        urlDataSync={instance(urlDataSync)}
+      />
+    );
   });
 
   it("Should perform get automatically", async () => {
     // Setup
     const data: Data = { a: 0, b: 1, c: 2 };
     const query = { a: "1", b: "2" };
-    when(urlDataSync.get()).thenResolve(data);
+    when(urlDataSync.get(anything())).thenResolve(data);
     when(urlDataSync.getURLQuery()).thenResolve(query);
 
     // When
@@ -44,13 +54,15 @@ describe("Auto URL data sync", () => {
     await asyncTimeout(1);
 
     wrapper.setProps({});
+
     const { data: result, isLoadingData, urlQuery } = wrapper
       .find(TestComponent)
       .props();
 
     // Then
-    verify(urlDataSync.get()).once();
+    verify(urlDataSync.get(deepEqual(additionalDataQuery))).once();
     verify(urlDataSync.getURLQuery()).once();
+    expect(onDataChange).toHaveBeenCalledTimes(1);
     expect(isLoadingData).toBeFalsy();
     expect(result).toEqual(data);
     expect(urlQuery).toEqual(query);
@@ -60,7 +72,7 @@ describe("Auto URL data sync", () => {
     // Setup
     const data: Data = { a: 0, b: 1, c: 2 };
     const newData: Data = { a: 1, b: 2, c: 3 };
-    when(urlDataSync.get()).thenResolve(data);
+    when(urlDataSync.get(anything())).thenResolve(data);
     when(urlDataSync.update(anything())).thenResolve(newData);
     when(urlDataSync.getURLQuery()).thenResolve({});
 
@@ -90,7 +102,7 @@ describe("Auto URL data sync", () => {
     await asyncTimeout(1);
 
     // Then
-    verify(urlDataSync.get()).once();
+    verify(urlDataSync.get(deepEqual(additionalDataQuery))).once();
     verify(urlDataSync.update(deepEqual(newData))).once();
     expect(loading2).toBeFalsy();
     expect(result).toEqual(newData);
@@ -98,7 +110,7 @@ describe("Auto URL data sync", () => {
 
   it("Should update URL queries correctly", async () => {
     // Setup
-    when(urlDataSync.get()).thenResolve({});
+    when(urlDataSync.get(anything())).thenResolve({});
     when(urlDataSync.getURLQuery()).thenResolve({});
     when(urlDataSync.updateURLQuery(anything())).thenResolve(undefined);
     const query = { a: "1", b: "2" };
@@ -116,7 +128,7 @@ describe("Auto URL data sync", () => {
     const { urlQuery } = wrapper.find(TestComponent).props();
 
     // Then
-    verify(urlDataSync.get()).twice();
+    verify(urlDataSync.get(deepEqual(additionalDataQuery))).twice();
     verify(urlDataSync.getURLQuery()).once();
     verify(urlDataSync.updateURLQuery(deepEqual(query)));
     expect(urlQuery).toEqual(query);
@@ -125,7 +137,7 @@ describe("Auto URL data sync", () => {
   it("Should set error when getting data fails", async () => {
     // Setup
     const error = new Error("error!");
-    when(urlDataSync.get()).thenReject(error);
+    when(urlDataSync.get(anything())).thenReject(error);
     when(urlDataSync.getURLQuery()).thenResolve({});
 
     // When
@@ -142,7 +154,7 @@ describe("Auto URL data sync", () => {
   it("Should set error when saving fails", async () => {
     // Setup
     const error = new Error("error!");
-    when(urlDataSync.get()).thenResolve({});
+    when(urlDataSync.get(anything())).thenResolve({});
     when(urlDataSync.getURLQuery()).thenResolve({});
     when(urlDataSync.update(anything())).thenReject(error);
 

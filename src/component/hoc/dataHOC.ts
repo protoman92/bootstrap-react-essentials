@@ -10,6 +10,7 @@ export interface AutoURLDataSyncInProps<Data> {
   readonly dataError: Error | null | undefined;
   readonly isLoadingData: boolean;
   readonly urlQuery: URLQueryMap;
+
   saveData(): void;
   updateData(data: Partial<Data>): void;
 
@@ -17,14 +18,17 @@ export interface AutoURLDataSyncInProps<Data> {
   updateURLQuery(...queries: readonly URLQueryMap[]): void;
 }
 
-export interface AutoURLDataSyncOutProps {
+export interface AutoURLDataSyncOutProps<Data> {
+  /** This is used for the data synchronizer. */
+  readonly additionalDataQuery?: Repository.URLDataSync.AdditionalQuery;
   readonly urlDataSync: Repository.URLDataSync;
+  readonly onDataChange?: (data: Data) => void;
 }
 
 export interface AutoURLDataSyncEnhancer<Data>
   extends FunctionalEnhancer<
     AutoURLDataSyncInProps<Data>,
-    AutoURLDataSyncOutProps
+    AutoURLDataSyncOutProps<Data>
   > {}
 
 /**
@@ -41,7 +45,7 @@ export interface AutoURLDataSyncEnhancer<Data>
 export function autoURLDataSync<Data>(
   initial: Data
 ): AutoURLDataSyncEnhancer<Data> {
-  return createEnhancerChain<AutoURLDataSyncOutProps>()
+  return createEnhancerChain<AutoURLDataSyncOutProps<Data>>()
     .compose(
       withStateHandlers(
         {
@@ -51,7 +55,10 @@ export function autoURLDataSync<Data>(
           urlQuery: {} as URLQueryMap
         },
         {
-          setData: () => data => ({ data }),
+          setData: (state, { onDataChange }) => data => {
+            !!onDataChange && onDataChange(data);
+            return { data };
+          },
           setDataError: () => dataError => ({ dataError }),
           setIsLoadingData: () => isLoadingData => ({ isLoadingData }),
           setURLQuery: () => urlQuery => ({ urlQuery })
@@ -61,6 +68,7 @@ export function autoURLDataSync<Data>(
     .compose(
       mapProps(
         ({
+          additionalDataQuery,
           urlDataSync,
           data,
           setData,
@@ -86,7 +94,8 @@ export function autoURLDataSync<Data>(
             }
           }
 
-          const getData = () => callAPI(() => urlDataSync.get(), setData);
+          const getData = () =>
+            callAPI(() => urlDataSync.get(additionalDataQuery), setData);
 
           return {
             ...rest,
@@ -127,8 +136,13 @@ interface MongoCursorPaginatedData<Data> {
   readonly previous?: string;
 }
 
-interface MongoCursorPaginationInProps extends AutoURLDataSyncOutProps {
+interface MongoCursorPaginationInProps extends MongoCursorPaginationOutProps {
+  readonly additionalDataQuery: Repository.URLDataSync.AdditionalQuery;
   readonly page: number;
+}
+
+interface MongoCursorPaginationOutProps {
+  readonly urlDataSync: Repository.URLDataSync;
 }
 
 /**
@@ -138,9 +152,9 @@ interface MongoCursorPaginationInProps extends AutoURLDataSyncOutProps {
  */
 export function mongoCursorPagination<Data>(): FunctionalEnhancer<
   MongoCursorPaginationInProps,
-  AutoURLDataSyncOutProps
+  MongoCursorPaginationOutProps
 > {
-  return createEnhancerChain<AutoURLDataSyncOutProps>()
+  return createEnhancerChain<MongoCursorPaginationOutProps>()
     .compose(
       withStateHandlers(
         {
@@ -167,6 +181,7 @@ export function mongoCursorPagination<Data>(): FunctionalEnhancer<
           setPage
         }) => ({
           page,
+          additionalDataQuery: { next, previous },
           urlDataSync: {
             ...urlDataSync,
             get: async (
