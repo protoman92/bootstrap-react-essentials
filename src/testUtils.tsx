@@ -34,7 +34,11 @@ export function createTestStore(
 }
 
 /* istanbul ignore next */
-export function createTestComponent<Props>(): ComponentType<Props> {
+export function createTestComponent<Props>(
+  enhance?:
+    | FunctionalEnhancer<Props, any>
+    | ((...args: any) => FunctionalEnhancer<Props, any>)
+): ComponentType<Props> {
   return props => {
     // console.info("Props for test component:\n", props);
     return <div />;

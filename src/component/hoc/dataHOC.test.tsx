@@ -2,7 +2,11 @@ import enzyme from "enzyme";
 import React from "react";
 import { anything, deepEqual, instance, spy, verify, when } from "ts-mockito";
 import { asyncTimeout, createTestComponent } from "../../testUtils";
-import { autoURLDataSync, AutoURLDataSyncInProps } from "./dataHOC";
+import {
+  autoURLDataSync,
+  AutoURLDataSyncInProps,
+  mongoCursorPagination
+} from "./dataHOC";
 
 describe("Auto URL data sync", () => {
   interface Data {
@@ -156,5 +160,88 @@ describe("Auto URL data sync", () => {
 
     // Then
     expect(dataError).toEqual(error);
+  });
+});
+
+describe("Mongo cursor pagination", () => {
+  const TestComponent = createTestComponent(mongoCursorPagination);
+  const EnhancedComponent = mongoCursorPagination()(TestComponent);
+  let urlDataSync: Repository.URLDataSync;
+  let WrappedElement: JSX.Element;
+
+  beforeEach(() => {
+    urlDataSync = spy<Repository.URLDataSync>({
+      get: () => Promise.reject(""),
+      update: () => Promise.reject(""),
+      updateURLQuery: () => Promise.reject(""),
+      getURLQuery: () => Promise.reject("")
+    });
+
+    WrappedElement = <EnhancedComponent urlDataSync={instance(urlDataSync)} />;
+  });
+
+  it("Should set next correctly", async () => {
+    // Setup
+    const wrapper = enzyme.mount(WrappedElement);
+
+    // When && Then: Base case.
+    const { urlDataSync: wrappedSync1 } = wrapper.find(TestComponent).props();
+
+    when(urlDataSync.get(anything())).thenResolve({
+      results: [],
+      next: "next1",
+      previous: "previous1"
+    });
+
+    await wrappedSync1.get();
+    await asyncTimeout(1);
+    wrapper.setProps({});
+    const { page: page1 } = wrapper.find(TestComponent).props();
+    expect(page1).toEqual(0);
+
+    // When && Then: Next page.
+    const { urlDataSync: wrappedSync2 } = wrapper.find(TestComponent).props();
+
+    when(urlDataSync.get(anything())).thenResolve({
+      results: [],
+      next: "next2",
+      previous: "next1"
+    });
+
+    await wrappedSync2.get();
+    await asyncTimeout(1);
+    wrapper.setProps({});
+    const { page: page2 } = wrapper.find(TestComponent).props();
+    expect(page2).toEqual(1);
+
+    // When && Then: Previous page.
+    const { urlDataSync: wrappedSync3 } = wrapper.find(TestComponent).props();
+
+    when(urlDataSync.get(anything())).thenResolve({
+      results: [],
+      next: "next1",
+      previous: "previous1"
+    });
+
+    await wrappedSync3.get();
+    await asyncTimeout(1);
+    wrapper.setProps({});
+    const { page: page3 } = wrapper.find(TestComponent).props();
+    expect(page3).toEqual(0);
+
+    // When && Then: Previous page without changing page.
+    const { urlDataSync: wrappedSync4 } = wrapper.find(TestComponent).props();
+
+    when(urlDataSync.get(anything())).thenResolve({
+      results: [],
+      next: "previous1",
+      previous: "previous2"
+    });
+
+    await wrappedSync4.get();
+    await asyncTimeout(1);
+    wrapper.setProps({});
+    const { page: page4 } = wrapper.find(TestComponent).props();
+    expect(page4).toEqual(0);
   });
 });

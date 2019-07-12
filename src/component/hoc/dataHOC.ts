@@ -136,7 +136,6 @@ interface MongoCursorPaginationInProps extends AutoURLDataSyncOutProps {
  * that the server will return the data in the above format - the cursor markers
  * will be stored internally and fed the next time we perform a GET request.
  */
-/* istanbul ignore next */
 export function mongoCursorPagination<Data>(): FunctionalEnhancer<
   MongoCursorPaginationInProps,
   AutoURLDataSyncOutProps
