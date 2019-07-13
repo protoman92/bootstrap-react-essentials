@@ -64,13 +64,18 @@ interface EnhancerChain<I, O> {
   compose<I1>(e: ICEW1<I1, I>): EnhancerChain<I1, O>;
   compose<I1>(e: ICEW2<I1, I>): EnhancerChain<I1, O>;
   checkThis(fn?: (i: I, o: O) => void): EnhancerChain<I, O>;
-  enhance<I1 extends I>(c: ComponentType<I1>): ComponentType<O>;
-  enhance<I1 extends Partial<I>>(c: ComponentType<I1>): ComponentType<O>;
+  enhance(c: ComponentType<I>): ComponentType<O>;
   forPropsOfType<P>(props?: P): EnhancerChain<P, P>;
+  omitKeysFromInProps<K extends keyof I>(
+    ...keys: readonly K[]
+  ): EnhancerChain<OmitKeys<I, K>, O>;
   omitKeysFromOutProps<K extends keyof O>(
     ...keys: K[]
   ): EnhancerChain<I, OmitKeys<O, K>>;
-  keepKeysInOutProps<K extends keyof O>(
+  keepKeysForInProps<K extends keyof I>(
+    ...keys: K[]
+  ): EnhancerChain<Pick<I, K>, O>;
+  keepKeysForOutProps<K extends keyof O>(
     ...keys: K[]
   ): EnhancerChain<I, Pick<O, K>>;
 }
@@ -87,8 +92,10 @@ export function createEnhancerChain(): EnhancerChain<{}, {}> {
     checkThis: () => enhancerChain,
     forPropsOfType: () => enhancerChain as any,
     enhance: (c: any) => compose<any, any>(...enhancers)(c),
+    omitKeysFromInProps: () => enhancerChain as any,
     omitKeysFromOutProps: () => enhancerChain as any,
-    keepKeysInOutProps: () => enhancerChain as any
+    keepKeysForInProps: () => enhancerChain as any,
+    keepKeysForOutProps: () => enhancerChain as any
   };
 
   return enhancerChain;

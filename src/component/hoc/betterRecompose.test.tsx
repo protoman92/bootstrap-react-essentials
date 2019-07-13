@@ -37,6 +37,7 @@ describe("Enhancer chain", () => {
       .compose(withState("b", "setB", 0))
       .compose(mapProps(({ a, b }) => ({ a: a + 1, b: b + 1 })))
       .compose(withState("c", "setC", 0))
+      .compose(withState("d", "setD", 0))
       .checkThis((i, o) => {})
       .compose(
         lifecycle({
@@ -48,10 +49,15 @@ describe("Enhancer chain", () => {
       .compose(onlyUpdateForKeys("a", "b", "c"))
       .compose(omitKeys("setC"))
       .compose(withState("d", "setD", 1))
+      .keepKeysForInProps("a", "b", "c", "d")
+      .omitKeysFromInProps("d")
       .forPropsOfType<EndProps>()
       .omitKeysFromOutProps("a", "b")
-      .keepKeysInOutProps("c")
-      .omitKeysFromOutProps("c");
+      .keepKeysForOutProps("c")
+      .omitKeysFromOutProps("c")
+      .forPropsOfType<EndProps & { d: number }>()
+      .omitKeysFromInProps("d")
+      .omitKeysFromOutProps("a", "b", "c", "d");
 
     const EnhancedComponent = enhancer.enhance(TestComponent);
     const WrappedElement = mount(<EnhancedComponent />);

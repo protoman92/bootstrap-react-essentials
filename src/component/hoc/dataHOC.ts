@@ -123,7 +123,7 @@ export function urlDataSync<Data, OutProps = {}>(): FunctionalEnhancer<
           await getData();
         }
       })
-    ).enhance;
+    ).enhance as any;
 }
 
 // ############################# DATA PAGINATION #############################
@@ -190,7 +190,7 @@ export function cursorPagination<Data, OutProps = {}>(): FunctionalEnhancer<
           }
         })
       )
-    ).enhance;
+    ).enhance as any;
 }
 
 export interface CursorPaginationDataInProps<T>
@@ -221,5 +221,5 @@ export function cursorPaginationData<T, OutProps = {}>(): FunctionalEnhancer<
         data: createSparseArray(count, limit * page, ...results),
         page
       }))
-    ).enhance;
+    ).enhance as any;
 }
