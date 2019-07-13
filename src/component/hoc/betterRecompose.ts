@@ -58,7 +58,11 @@ declare module "recompose" {
  * An enhancer chain allows for type-safe HOC composition. Instead of using
  * compose, use this chain to ensure type-safeness for the final component.
  */
-interface EnhancerChain<I, O> {
+export interface EnhancerChain<I, O> {
+  startWith<I1, O1>(e: Enhancer<I1, O1>): EnhancerChain<I1, O1>;
+  startWith<I1, O1>(e: FunctionalEnhancer<I1, O1>): EnhancerChain<I1, O1>;
+  startWith<I1, O1>(e: ICEW1<I1, O1>): EnhancerChain<I1, O1>;
+  startWith<I1, O1>(e: ICEW2<I1, O1>): EnhancerChain<I1, O1>;
   compose<I1>(e: Enhancer<I1, I>): EnhancerChain<I1, O>;
   compose<I1>(e: FunctionalEnhancer<I1, I>): EnhancerChain<I1, O>;
   compose<I1>(e: ICEW1<I1, I>): EnhancerChain<I1, O>;
@@ -78,6 +82,7 @@ interface EnhancerChain<I, O> {
   keepKeysForOutProps<K extends keyof O>(
     ...keys: K[]
   ): EnhancerChain<I, Pick<O, K>>;
+  infuseWithProps(c: ComponentType<any>): ComponentType<I>;
 }
 
 /** Create an enhancer chain. */
@@ -85,6 +90,7 @@ export function createEnhancerChain(): EnhancerChain<{}, {}> {
   const enhancers: any[] = [];
 
   const enhancerChain: EnhancerChain<{}, {}> = {
+    startWith: (e: Function) => enhancerChain.compose(e as any),
     compose: (e: Function) => {
       enhancers.push(e);
       return enhancerChain as any;
@@ -95,7 +101,8 @@ export function createEnhancerChain(): EnhancerChain<{}, {}> {
     omitKeysFromInProps: () => enhancerChain as any,
     omitKeysFromOutProps: () => enhancerChain as any,
     keepKeysForInProps: () => enhancerChain as any,
-    keepKeysForOutProps: () => enhancerChain as any
+    keepKeysForOutProps: () => enhancerChain as any,
+    infuseWithProps: c => c as any
   };
 
   return enhancerChain;

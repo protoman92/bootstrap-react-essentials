@@ -128,18 +128,18 @@ export function urlDataSync<Data, OutProps = {}>(): FunctionalEnhancer<
 
 // ############################# DATA PAGINATION #############################
 
-export interface CursorPaginatedData<Data> {
-  readonly results: Data;
+export interface CursorPaginatedData<T> {
+  readonly results: readonly T[];
   readonly count: number;
   readonly limit: number;
   readonly next?: string;
   readonly previous?: string;
 }
 
-export interface CursorPaginationInProps<Data>
+export interface CursorPaginationInProps<T>
   extends Pick<
-    URLDataSyncOutProps<CursorPaginatedData<Data>>,
-    "additionalDataQuery" | "onDataChange"
+    URLDataSyncOutProps<CursorPaginatedData<T>>,
+    "additionalDataQuery" | "initialData" | "onDataChange"
   > {
   readonly page: number;
 }
@@ -149,8 +149,8 @@ export interface CursorPaginationInProps<Data>
  * that the server will return the data in the above format - the cursor markers
  * will be stored internally and fed the next time we perform a GET request.
  */
-export function cursorPagination<Data, OutProps = {}>(): FunctionalEnhancer<
-  CursorPaginationInProps<Data> & OutProps,
+export function cursorPagination<T, OutProps = {}>(): FunctionalEnhancer<
+  CursorPaginationInProps<T> & OutProps,
   OutProps
 > {
   return createEnhancerChain()
@@ -174,11 +174,13 @@ export function cursorPagination<Data, OutProps = {}>(): FunctionalEnhancer<
         ({ next, previous, page, setNext, setPrevious, setPage, ...rest }) => ({
           ...rest,
           additionalDataQuery: { next, previous },
+          initialData: {
+            count: 0,
+            limit: 0,
+            results: []
+          } as CursorPaginatedData<T>,
           page,
-          onDataChange: ({
-            next: n,
-            previous: p
-          }: CursorPaginatedData<Data>) => {
+          onDataChange: ({ next: n, previous: p }: CursorPaginatedData<T>) => {
             setNext(n);
             setPrevious(p);
 
@@ -193,12 +195,12 @@ export function cursorPagination<Data, OutProps = {}>(): FunctionalEnhancer<
     ).enhance as any;
 }
 
-export interface CursorPaginationDataInProps<T>
+export interface CursorPaginatedDataInProps<T>
   extends Pick<URLDataSyncInProps<readonly (T | undefined)[]>, "data">,
     Pick<CursorPaginationInProps<any>, "page"> {}
 
-export interface CursorPaginationDataOutProps<T>
-  extends Pick<URLDataSyncInProps<CursorPaginatedData<readonly T[]>>, "data">,
+export interface CursorPaginatedDataOutProps<T>
+  extends Pick<URLDataSyncInProps<CursorPaginatedData<T>>, "data">,
     Pick<CursorPaginationInProps<any>, "page"> {}
 
 /**
@@ -209,12 +211,12 @@ export interface CursorPaginationDataOutProps<T>
  * - Page 1: [x, x, x, x, x, o, o, o, o, o].
  * - Page 2: [o, o, o, o, o, x, x, x, x, x].
  */
-export function cursorPaginationData<T, OutProps = {}>(): FunctionalEnhancer<
-  CursorPaginationDataInProps<T> & OutProps,
-  CursorPaginationDataOutProps<T> & OutProps
+export function cursorPaginatedData<T, OutProps = {}>(): FunctionalEnhancer<
+  CursorPaginatedDataInProps<T> & OutProps,
+  CursorPaginatedDataOutProps<T> & OutProps
 > {
   return createEnhancerChain()
-    .forPropsOfType<CursorPaginationDataOutProps<T> & OutProps>()
+    .forPropsOfType<CursorPaginatedDataOutProps<T> & OutProps>()
     .compose(
       mapProps(({ data: { results, count, limit }, page, ...rest }) => ({
         ...rest,
@@ -222,4 +224,28 @@ export function cursorPaginationData<T, OutProps = {}>(): FunctionalEnhancer<
         page
       }))
     ).enhance as any;
+}
+
+// ############################## FULL MANAGED ##############################
+
+export interface URLPaginatedDataSyncInProps<T>
+  extends URLDataSyncInProps<readonly (T | undefined)[]>,
+    Pick<CursorPaginatedDataInProps<any>, "page"> {}
+
+export interface URLPaginatedDataSyncOutProps<T>
+  extends Pick<URLDataSyncOutProps<CursorPaginatedData<T>>, "urlDataSync"> {}
+
+/**
+ * This HOC automatically manages pagination data sync, and is best used to
+ * display table data. For other kinds of data use the data sync HOC.
+ */
+export function urlPaginatedDataSync<T>(): FunctionalEnhancer<
+  URLPaginatedDataSyncInProps<T>,
+  URLPaginatedDataSyncOutProps<T>
+> {
+  return createEnhancerChain()
+    .forPropsOfType<URLDataSyncOutProps<CursorPaginatedData<T>>>()
+    .compose(cursorPagination())
+    .compose(urlDataSync())
+    .compose(cursorPaginatedData()).enhance as any;
 }

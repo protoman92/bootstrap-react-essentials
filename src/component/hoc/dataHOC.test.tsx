@@ -4,10 +4,10 @@ import { anything, deepEqual, instance, spy, verify, when } from "ts-mockito";
 import { asyncTimeout, createTestComponent } from "../../testUtils";
 import {
   CursorPaginatedData,
+  cursorPaginatedData,
   cursorPagination,
   urlDataSync as urlDataSyncHOC,
-  URLDataSyncInProps,
-  cursorPaginationData
+  URLDataSyncInProps
 } from "./dataHOC";
 
 describe("Auto URL data sync", () => {
@@ -255,8 +255,8 @@ describe("Cursor pagination", () => {
 });
 
 describe("Cursor pagination data", () => {
-  const TestComponent = createTestComponent(cursorPaginationData);
-  const EnhancedComponent = cursorPaginationData()(TestComponent);
+  const TestComponent = createTestComponent(cursorPaginatedData);
+  const EnhancedComponent = cursorPaginatedData()(TestComponent);
 
   it("Should create sparse data correctly", async () => {
     // Setup

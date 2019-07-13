@@ -9,13 +9,7 @@ import {
   onlyUpdateForKeys,
   withState
 } from "./betterRecompose";
-import {
-  CursorPaginatedData,
-  cursorPagination,
-  cursorPaginationData,
-  urlDataSync,
-  URLDataSyncOutProps
-} from "./dataHOC";
+import { urlPaginatedDataSync } from "./dataHOC";
 
 describe("Enhancer chain", () => {
   it("Should work correctly", async () => {
@@ -72,18 +66,23 @@ describe("Enhancer chain", () => {
   });
 
   it("Mongo pagination and auto URL data sync", async () => {
-    const EnhancedComponent = createEnhancerChain()
-      .forPropsOfType<URLDataSyncOutProps<CursorPaginatedData<[]>>>()
-      .compose(cursorPagination())
-      .checkThis((i, o) => o.onDataChange)
-      .compose(urlDataSync())
-      .checkThis((i, o) => i.additionalDataQuery)
-      .compose(cursorPaginationData())
-      .enhance(() => <div />);
+    const enhancer = createEnhancerChain().startWith(
+      urlPaginatedDataSync<number>()
+    );
 
-    <EnhancedComponent
-      initialData={{ count: 0, limit: 0, results: [] }}
-      urlDataSync={undefined as any}
+    const TestComponent = enhancer.infuseWithProps(() => <div />);
+    const EnhancedComponent = enhancer.enhance(TestComponent);
+    <EnhancedComponent urlDataSync={undefined as any} />;
+
+    <TestComponent
+      data={[]}
+      dataError={null}
+      isLoadingData={false}
+      urlQuery={{}}
+      page={0}
+      saveData={() => {}}
+      updateData={() => {}}
+      updateURLQuery={() => {}}
     />;
   });
 });
