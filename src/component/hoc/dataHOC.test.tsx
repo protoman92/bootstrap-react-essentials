@@ -1,4 +1,4 @@
-import enzyme from "enzyme";
+import { mount } from "enzyme";
 import React from "react";
 import { anything, deepEqual, instance, spy, verify, when } from "ts-mockito";
 import { asyncTimeout, createTestComponent } from "../../testUtils";
@@ -6,7 +6,8 @@ import {
   CursorPaginatedData,
   cursorPagination,
   urlDataSync as urlDataSyncHOC,
-  URLDataSyncInProps
+  URLDataSyncInProps,
+  cursorPaginationData
 } from "./dataHOC";
 
 describe("Auto URL data sync", () => {
@@ -52,7 +53,7 @@ describe("Auto URL data sync", () => {
     when(urlDataSync.getURLQuery()).thenResolve(query);
 
     // When
-    const wrapper = enzyme.mount(WrappedElement);
+    const wrapper = mount(WrappedElement);
     await asyncTimeout(1);
 
     wrapper.setProps({});
@@ -79,7 +80,7 @@ describe("Auto URL data sync", () => {
     when(urlDataSync.getURLQuery()).thenResolve({});
 
     // When
-    const wrapper = enzyme.mount(WrappedElement);
+    const wrapper = mount(WrappedElement);
     await asyncTimeout(1);
 
     wrapper.setProps({});
@@ -118,7 +119,7 @@ describe("Auto URL data sync", () => {
     const query = { a: "1", b: "2" };
 
     // When
-    const wrapper = enzyme.mount(WrappedElement);
+    const wrapper = mount(WrappedElement);
     await asyncTimeout(1);
 
     wrapper.setProps({});
@@ -143,7 +144,7 @@ describe("Auto URL data sync", () => {
     when(urlDataSync.getURLQuery()).thenResolve({});
 
     // When
-    const wrapper = enzyme.mount(WrappedElement);
+    const wrapper = mount(WrappedElement);
     await asyncTimeout(1);
 
     wrapper.setProps({});
@@ -161,7 +162,7 @@ describe("Auto URL data sync", () => {
     when(urlDataSync.update(anything())).thenReject(error);
 
     // When
-    const wrapper = enzyme.mount(WrappedElement);
+    const wrapper = mount(WrappedElement);
     await asyncTimeout(1);
 
     wrapper.setProps({});
@@ -177,7 +178,7 @@ describe("Auto URL data sync", () => {
   });
 });
 
-describe("Mongo cursor pagination", () => {
+describe("Cursor pagination", () => {
   const TestComponent = createTestComponent(cursorPagination);
   const EnhancedComponent = cursorPagination()(TestComponent);
   let WrappedElement: JSX.Element;
@@ -201,7 +202,7 @@ describe("Mongo cursor pagination", () => {
       };
     }
 
-    const wrapper = enzyme.mount(WrappedElement);
+    const wrapper = mount(WrappedElement);
 
     // When && Then: Base case.
     const { onDataChange: onChange1 } = wrapper.find(TestComponent).props();
@@ -250,5 +251,33 @@ describe("Mongo cursor pagination", () => {
 
     expect(query4).toEqual({ next: "prev1", previous: "prev2" });
     expect(page4).toEqual(0);
+  });
+});
+
+describe("Cursor pagination data", () => {
+  const TestComponent = createTestComponent(cursorPaginationData);
+  const EnhancedComponent = cursorPaginationData()(TestComponent);
+
+  it("Should create sparse data correctly", async () => {
+    // Setup
+    const paginated = { results: [1, 2], count: 4, limit: 2 };
+
+    // When && Then: Page 0.
+    let WrappedElement = <EnhancedComponent data={paginated} page={0} />;
+
+    const { data: data1 } = mount(WrappedElement)
+      .find(TestComponent)
+      .props();
+
+    expect(data1).toEqual([1, 2, undefined, undefined]);
+
+    // When && Then: Page 1.
+    WrappedElement = <EnhancedComponent data={paginated} page={1} />;
+
+    const { data: data2 } = mount(WrappedElement)
+      .find(TestComponent)
+      .props();
+
+    expect(data2).toEqual([undefined, undefined, 1, 2]);
   });
 });
