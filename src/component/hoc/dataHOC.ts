@@ -1,6 +1,6 @@
 import mapProps from "recompose/mapProps";
 import withStateHandlers from "recompose/withStateHandlers";
-import { createSparseArray, mergeQueryMaps } from "../../utils";
+import { mergeQueryMaps } from "../../utils";
 import { createEnhancerChain, lifecycle } from "./betterRecompose";
 
 // ############################ AUTO URL DATA SYNC ############################
@@ -37,7 +37,7 @@ export interface URLDataSyncOutProps<Data> {
  * when implementing the backend to handle these requests that it never returns
  * null/undefined (as per REST design standards).
  */
-export function urlDataSync<Data, OutProps = {}>(): FunctionalEnhancer<
+export const urlDataSync = function<Data, OutProps = {}>(): FunctionalEnhancer<
   URLDataSyncInProps<Data> & OutProps,
   URLDataSyncOutProps<Data> & OutProps
 > {
@@ -124,14 +124,12 @@ export function urlDataSync<Data, OutProps = {}>(): FunctionalEnhancer<
         }
       })
     ).enhance as any;
-}
+};
 
 // ############################# DATA PAGINATION #############################
 
 export interface CursorPaginatedData<T> {
   readonly results: readonly T[];
-  readonly count: number;
-  readonly limit: number;
   readonly next?: string;
   readonly previous?: string;
 }
@@ -141,7 +139,8 @@ export interface CursorPaginationInProps<T>
     URLDataSyncOutProps<CursorPaginatedData<T>>,
     "additionalDataQuery" | "initialData" | "onDataChange"
   > {
-  readonly page: number;
+  goToNextPage: () => void;
+  goToPreviousPage: () => void;
 }
 
 /**
@@ -158,70 +157,32 @@ export function cursorPagination<T, OutProps = {}>(): FunctionalEnhancer<
     .compose(
       withStateHandlers(
         {
-          next: "",
-          previous: "",
-          page: 0
+          next: undefined as string | undefined,
+          previous: undefined as string | undefined
         },
         {
-          setNext: () => next => ({ next }),
-          setPrevious: () => previous => ({ previous }),
-          setPage: () => page => ({ page })
+          setNext: () => (next: string | undefined) => ({ next }),
+          setPrevious: () => (previous: string | undefined) => ({ previous })
         }
       )
     )
     .compose(
-      mapProps(
-        ({ next, previous, page, setNext, setPrevious, setPage, ...rest }) => ({
-          ...rest,
-          additionalDataQuery: { next, previous },
-          initialData: {
-            count: 0,
-            limit: 0,
-            results: []
-          } as CursorPaginatedData<T>,
-          page,
-          onDataChange: ({ next: n, previous: p }: CursorPaginatedData<T>) => {
-            setNext(n);
-            setPrevious(p);
-
-            if (n === previous) {
-              setPage(Math.max(0, page - 1));
-            } else if (p === next) {
-              setPage(page + 1);
-            }
-          }
-        })
-      )
-    ).enhance as any;
-}
-
-export interface CursorPaginatedDataInProps<T>
-  extends Pick<URLDataSyncInProps<readonly (T | undefined)[]>, "data">,
-    Pick<CursorPaginationInProps<any>, "page"> {}
-
-export interface CursorPaginatedDataOutProps<T>
-  extends Pick<URLDataSyncInProps<CursorPaginatedData<T>>, "data">,
-    Pick<CursorPaginationInProps<any>, "page"> {}
-
-/**
- * This works with the cursor pagination HOC and auto URL data sync to provide
- * a sparsely-populated data array based on the current page. For example, a
- * page of 5 items and total item count of 10 looks like so (x is a valid item,
- * o is undefined):
- * - Page 1: [x, x, x, x, x, o, o, o, o, o].
- * - Page 2: [o, o, o, o, o, x, x, x, x, x].
- */
-export function cursorPaginatedData<T, OutProps = {}>(): FunctionalEnhancer<
-  CursorPaginatedDataInProps<T> & OutProps,
-  CursorPaginatedDataOutProps<T> & OutProps
-> {
-  return createEnhancerChain()
-    .forPropsOfType<CursorPaginatedDataOutProps<T> & OutProps>()
-    .compose(
-      mapProps(({ data: { results, count, limit }, page, ...rest }) => ({
+      mapProps(({ next, previous, setNext, setPrevious, ...rest }) => ({
         ...rest,
-        data: createSparseArray(count, limit * page, ...results),
-        page
+        additionalDataQuery: { next, previous },
+        initialData: { results: [] } as CursorPaginatedData<T>,
+        onDataChange: ({ next: n, previous: p }: CursorPaginatedData<T>) => {
+          setNext(n);
+          setPrevious(p);
+        },
+        goToNextPage: () => {
+          setPrevious(next);
+          setNext(undefined);
+        },
+        goToPreviousPage: () => {
+          setNext(previous);
+          setNext(undefined);
+        }
       }))
     ).enhance as any;
 }
@@ -230,7 +191,7 @@ export function cursorPaginatedData<T, OutProps = {}>(): FunctionalEnhancer<
 
 export interface URLPaginatedDataSyncInProps<T>
   extends URLDataSyncInProps<readonly (T | undefined)[]>,
-    Pick<CursorPaginatedDataInProps<any>, "page"> {}
+    Pick<CursorPaginationInProps<any>, "goToPreviousPage" | "goToNextPage"> {}
 
 export interface URLPaginatedDataSyncOutProps<T>
   extends Pick<URLDataSyncOutProps<CursorPaginatedData<T>>, "urlDataSync"> {}
@@ -247,5 +208,7 @@ export function urlPaginatedDataSync<T>(): FunctionalEnhancer<
     .forPropsOfType<URLDataSyncOutProps<CursorPaginatedData<T>>>()
     .compose(cursorPagination())
     .compose(urlDataSync())
-    .compose(cursorPaginatedData()).enhance as any;
+    .compose(
+      mapProps(({ data: { results }, ...rest }) => ({ ...rest, data: results }))
+    ).enhance as any;
 }

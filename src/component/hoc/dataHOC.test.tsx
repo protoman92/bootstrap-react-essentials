@@ -4,7 +4,6 @@ import { anything, deepEqual, instance, spy, verify, when } from "ts-mockito";
 import { asyncTimeout, createTestComponent } from "../../testUtils";
 import {
   CursorPaginatedData,
-  cursorPaginatedData,
   cursorPagination,
   urlDataSync as urlDataSyncHOC,
   URLDataSyncInProps
@@ -192,14 +191,8 @@ describe("Cursor pagination", () => {
     function createData(
       next: string,
       previous: string
-    ): CursorPaginatedData<unknown> {
-      return {
-        results: [],
-        count: 0,
-        limit: 0,
-        next,
-        previous
-      };
+    ): CursorPaginatedData<{}> {
+      return { results: [], next, previous };
     }
 
     const wrapper = mount(WrappedElement);
@@ -209,75 +202,31 @@ describe("Cursor pagination", () => {
     onChange1!(createData("next1", "prev1"));
     wrapper.setProps({});
 
-    const { additionalDataQuery: query1, page: page1 } = wrapper
-      .find(TestComponent)
-      .props();
-
+    const { additionalDataQuery: query1 } = wrapper.find(TestComponent).props();
     expect(query1).toEqual({ next: "next1", previous: "prev1" });
-    expect(page1).toEqual(0);
 
     // When && Then: Next page.
     const { onDataChange: onChange2 } = wrapper.find(TestComponent).props();
     onChange2!(createData("next2", "next1"));
     wrapper.setProps({});
 
-    const { additionalDataQuery: query2, page: page2 } = wrapper
-      .find(TestComponent)
-      .props();
-
+    const { additionalDataQuery: query2 } = wrapper.find(TestComponent).props();
     expect(query2).toEqual({ next: "next2", previous: "next1" });
-    expect(page2).toEqual(1);
 
     // When && Then: Previous page.
     const { onDataChange: onChange3 } = wrapper.find(TestComponent).props();
     onChange3!(createData("next1", "prev1"));
     wrapper.setProps({});
 
-    const { additionalDataQuery: query3, page: page3 } = wrapper
-      .find(TestComponent)
-      .props();
-
+    const { additionalDataQuery: query3 } = wrapper.find(TestComponent).props();
     expect(query3).toEqual({ next: "next1", previous: "prev1" });
-    expect(page3).toEqual(0);
 
     // When && Then: Previous page without changing page.
     const { onDataChange: onChange4 } = wrapper.find(TestComponent).props();
     onChange4!(createData("prev1", "prev2"));
     wrapper.setProps({});
 
-    const { additionalDataQuery: query4, page: page4 } = wrapper
-      .find(TestComponent)
-      .props();
-
+    const { additionalDataQuery: query4 } = wrapper.find(TestComponent).props();
     expect(query4).toEqual({ next: "prev1", previous: "prev2" });
-    expect(page4).toEqual(0);
-  });
-});
-
-describe("Cursor pagination data", () => {
-  const TestComponent = createTestComponent(cursorPaginatedData);
-  const EnhancedComponent = cursorPaginatedData()(TestComponent);
-
-  it("Should create sparse data correctly", async () => {
-    // Setup
-    const paginated = { results: [1, 2], count: 4, limit: 2 };
-
-    // When && Then: Page 0.
-    let WrappedElement = <EnhancedComponent data={paginated} page={0} />;
-
-    const { data: data1 } = mount(WrappedElement)
-      .find(TestComponent)
-      .props();
-
-    expect(data1).toEqual([1, 2, undefined, undefined]);
-
-    // When && Then: Page 1.
-    WrappedElement = <EnhancedComponent data={paginated} page={1} />;
-
-    const { data: data2 } = mount(WrappedElement)
-      .find(TestComponent)
-      .props();
-
-    expect(data2).toEqual([undefined, undefined, 1, 2]);
   });
 });

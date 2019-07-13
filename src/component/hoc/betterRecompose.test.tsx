@@ -5,9 +5,8 @@ import { createTestComponent } from "../../testUtils";
 import {
   createEnhancerChain,
   lifecycle,
-  omitKeys,
-  onlyUpdateForKeys,
-  withState
+  withState,
+  onlyUpdateForKeys
 } from "./betterRecompose";
 import { urlPaginatedDataSync } from "./dataHOC";
 
@@ -41,7 +40,6 @@ describe("Enhancer chain", () => {
         })
       )
       .compose(onlyUpdateForKeys("a", "b", "c"))
-      .compose(omitKeys("setC"))
       .compose(withState("d", "setD", 1))
       .keepKeysForInProps("a", "b", "c", "d")
       .omitKeysFromInProps("d")
@@ -79,10 +77,11 @@ describe("Enhancer chain", () => {
       dataError={null}
       isLoadingData={false}
       urlQuery={{}}
-      page={0}
       saveData={() => {}}
       updateData={() => {}}
       updateURLQuery={() => {}}
+      goToNextPage={() => {}}
+      goToPreviousPage={() => {}}
     />;
   });
 });
