@@ -9,7 +9,11 @@ import {
   AutoURLDataSyncEnhancer,
   AutoURLDataSyncInProps,
   CursorPaginationEnhancer,
-  CursorPaginationInProps
+  CursorPaginationInProps,
+  CursorPaginationDataEnhancer,
+  CursorPaginationDataInProps,
+  AutoURLDataSyncOutProps,
+  CursorPaginationDataOutProps
 } from "./dataHOC";
 
 type Enhancer<I, O> = import("recompose").ComponentEnhancer<I, O>;
@@ -72,10 +76,22 @@ interface EnhancerChain<I, O> {
   compose<I1>(e: ICEW<I1, I>): EnhancerChain<I1, O>;
   compose<Data>(
     e: AutoURLDataSyncEnhancer<Data>
-  ): EnhancerChain<I & AutoURLDataSyncInProps<Data>, O>;
+  ): EnhancerChain<
+    I & AutoURLDataSyncInProps<Data>,
+    O & AutoURLDataSyncOutProps<Data>
+  >;
   compose<Data>(
     e: CursorPaginationEnhancer<Data>
-  ): EnhancerChain<I & CursorPaginationInProps<Data>, O>;
+  ): EnhancerChain<
+    I & CursorPaginationInProps<Data>,
+    O & CursorPaginationDataOutProps<Data>
+  >;
+  compose<T>(
+    e: CursorPaginationDataEnhancer<T>
+  ): EnhancerChain<
+    I & CursorPaginationDataInProps<T>,
+    O & CursorPaginationDataOutProps<T>
+  >;
   checkThis(fn?: (i: I, o: O) => void): EnhancerChain<I, O>;
   enhance<I1 extends I>(c: ComponentType<I1>): ComponentType<O>;
   enhance<I1 extends Partial<I>>(c: ComponentType<I1>): ComponentType<O>;

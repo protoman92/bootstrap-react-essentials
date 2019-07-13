@@ -3,11 +3,11 @@ import querystring from "querystring";
 /** Make an Array that can be sparse, i.e. have unfilled space. */
 export function createSparseArray<T>(
   length: number,
+  insertIndex: number,
   ...initialData: readonly T[]
 ): readonly (T | undefined)[] {
-  if (initialData.length >= length) return initialData;
   const sparseArray: T[] = [...Array(length)];
-  initialData.forEach((datum, i) => (sparseArray[i] = datum));
+  initialData.forEach((datum, i) => (sparseArray[i + insertIndex] = datum));
   return sparseArray;
 }
 

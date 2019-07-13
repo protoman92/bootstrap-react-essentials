@@ -9,7 +9,11 @@ import {
   onlyUpdateForKeys,
   withState
 } from "./betterRecompose";
-import { autoURLDataSync, cursorPagination } from "./dataHOC";
+import {
+  autoURLDataSync,
+  cursorPagination,
+  cursorPaginationData
+} from "./dataHOC";
 
 describe("Enhancer chain", () => {
   it("Should work correctly", async () => {
@@ -58,10 +62,11 @@ describe("Enhancer chain", () => {
   });
 
   it("Mongo pagination and auto URL data sync", async () => {
-    // Setup
     createEnhancerChain()
       .compose(cursorPagination<{}>())
       .compose(autoURLDataSync())
-      .checkThis((i, o) => i.data.results);
+      .compose(cursorPaginationData())
+      .checkThis((i, o) => i.data)
+      .enhance(() => <div />);
   });
 });

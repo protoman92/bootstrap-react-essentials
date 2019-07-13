@@ -5,6 +5,7 @@ import { asyncTimeout, createTestComponent } from "../../testUtils";
 import {
   autoURLDataSync,
   AutoURLDataSyncInProps,
+  CursorPaginatedData,
   cursorPagination
 } from "./dataHOC";
 
@@ -187,11 +188,24 @@ describe("Mongo cursor pagination", () => {
 
   it("Should set next correctly", async () => {
     // Setup
+    function createData(
+      next: string,
+      previous: string
+    ): CursorPaginatedData<unknown> {
+      return {
+        results: [],
+        count: 0,
+        limit: 0,
+        next,
+        previous
+      };
+    }
+
     const wrapper = enzyme.mount(WrappedElement);
 
     // When && Then: Base case.
     const { onDataChange: onChange1 } = wrapper.find(TestComponent).props();
-    onChange1!({ results: [], count: 0, next: "next1", previous: "prev1" });
+    onChange1!(createData("next1", "prev1"));
     wrapper.setProps({});
 
     const { additionalDataQuery: query1, page: page1 } = wrapper
@@ -203,7 +217,7 @@ describe("Mongo cursor pagination", () => {
 
     // When && Then: Next page.
     const { onDataChange: onChange2 } = wrapper.find(TestComponent).props();
-    onChange2!({ results: [], count: 0, next: "next2", previous: "next1" });
+    onChange2!(createData("next2", "next1"));
     wrapper.setProps({});
 
     const { additionalDataQuery: query2, page: page2 } = wrapper
@@ -215,7 +229,7 @@ describe("Mongo cursor pagination", () => {
 
     // When && Then: Previous page.
     const { onDataChange: onChange3 } = wrapper.find(TestComponent).props();
-    onChange3!({ results: [], count: 0, next: "next1", previous: "prev1" });
+    onChange3!(createData("next1", "prev1"));
     wrapper.setProps({});
 
     const { additionalDataQuery: query3, page: page3 } = wrapper
@@ -227,7 +241,7 @@ describe("Mongo cursor pagination", () => {
 
     // When && Then: Previous page without changing page.
     const { onDataChange: onChange4 } = wrapper.find(TestComponent).props();
-    onChange4!({ results: [], count: 0, next: "prev1", previous: "prev2" });
+    onChange4!(createData("prev1", "prev2"));
     wrapper.setProps({});
 
     const { additionalDataQuery: query4, page: page4 } = wrapper

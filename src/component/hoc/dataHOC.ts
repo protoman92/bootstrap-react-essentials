@@ -1,6 +1,6 @@
 import mapProps from "recompose/mapProps";
 import withStateHandlers from "recompose/withStateHandlers";
-import { mergeQueryMaps } from "../../utils";
+import { mergeQueryMaps, createSparseArray } from "../../utils";
 import { createEnhancerChain, lifecycle } from "./betterRecompose";
 
 // ############################ AUTO URL DATA SYNC ############################
@@ -126,11 +126,12 @@ export function autoURLDataSync<Data>(): AutoURLDataSyncEnhancer<Data> {
     ).enhance;
 }
 
-// ############################# MONGO PAGINATION #############################
+// ############################# DATA PAGINATION #############################
 
-interface CursorPaginatedData<Data> {
+export interface CursorPaginatedData<Data> {
   readonly results: Data;
   readonly count: number;
+  readonly limit: number;
   readonly next?: string;
   readonly previous?: string;
 }
@@ -183,4 +184,39 @@ export function cursorPagination<Data>(): CursorPaginationEnhancer<Data> {
         }
       }))
     ).enhance;
+}
+
+export interface CursorPaginationDataInProps<T>
+  extends Pick<AutoURLDataSyncInProps<readonly (T | undefined)[]>, "data">,
+    Pick<CursorPaginationInProps<any>, "page"> {}
+
+export interface CursorPaginationDataOutProps<T>
+  extends Pick<
+      AutoURLDataSyncInProps<CursorPaginatedData<readonly T[]>>,
+      "data"
+    >,
+    Pick<CursorPaginationInProps<any>, "page"> {}
+
+export interface CursorPaginationDataEnhancer<T>
+  extends FunctionalEnhancer<
+    CursorPaginationDataInProps<T>,
+    CursorPaginationDataOutProps<T>
+  > {}
+
+/**
+ * This works with the cursor pagination HOC and auto URL data sync to provide
+ * a sparsely-populated data array based on the current page. For example, a
+ * page of 5 items and total item count of 10 looks like so (x is a valid item,
+ * o is undefined):
+ * - Page 1: [x, x, x, x, x, o, o, o, o, o].
+ * - Page 2: [o, o, o, o, o, x, x, x, x, x].
+ */
+export function cursorPaginationData<T>(): CursorPaginationDataEnhancer<T> {
+  return createEnhancerChain<CursorPaginationDataOutProps<T>>().compose(
+    mapProps(({ data: { results, count, limit }, page, ...rest }) => ({
+      data: createSparseArray(count, limit * page, ...results),
+      page,
+      ...rest
+    }))
+  ).enhance;
 }
