@@ -1,28 +1,16 @@
 import { ComponentType } from "react";
-import { InferableComponentEnhancerWithProps as ICEW } from "react-redux";
+import { InferableComponentEnhancerWithProps as ICEW1 } from "react-redux";
+import { InferableComponentEnhancerWithProps as ICEW2 } from "recompose";
 import compose from "recompose/compose";
 import baseLifecyle from "recompose/lifecycle";
 import baseMapProps from "recompose/mapProps";
 import baseOnlyUpdateForKeys from "recompose/onlyUpdateForKeys";
 import baseWithState from "recompose/withState";
-import {
-  URLDataSyncEnhancer,
-  URLDataSyncInProps,
-  CursorPaginationEnhancer,
-  CursorPaginationInProps,
-  CursorPaginationDataEnhancer,
-  CursorPaginationDataInProps,
-  URLDataSyncOutProps,
-  CursorPaginationDataOutProps
-} from "./dataHOC";
 
 type Enhancer<I, O> = import("recompose").ComponentEnhancer<I, O>;
 type LifecycleF<P, S, I> = import("recompose").ReactLifeCycleFunctions<P, S, I>;
 
 declare module "recompose" {
-  interface InferableComponentEnhancerWithProps<TInjectedProps, TNeedsProps>
-    extends ComponentEnhancer<TInjectedProps, TNeedsProps> {}
-
   export interface ReactLifeCycleFunctions<TProps, TState, TInstance = {}> {
     componentWillMount?: (
       this: ReactLifeCycleFunctionsThisArguments<TProps, TState, TInstance>
@@ -73,44 +61,34 @@ declare module "recompose" {
 interface EnhancerChain<I, O> {
   compose<I1>(e: Enhancer<I1, I>): EnhancerChain<I1, O>;
   compose<I1>(e: FunctionalEnhancer<I1, I>): EnhancerChain<I1, O>;
-  compose<I1>(e: ICEW<I1, I>): EnhancerChain<I1, O>;
-  compose<Data>(
-    e: URLDataSyncEnhancer<Data>
-  ): EnhancerChain<I & URLDataSyncInProps<Data>, O & URLDataSyncOutProps<Data>>;
-  compose<Data>(
-    e: CursorPaginationEnhancer<Data>
-  ): EnhancerChain<
-    I & CursorPaginationInProps<Data>,
-    O & CursorPaginationDataOutProps<Data>
-  >;
-  compose<T>(
-    e: CursorPaginationDataEnhancer<T>
-  ): EnhancerChain<
-    I & CursorPaginationDataInProps<T>,
-    O & CursorPaginationDataOutProps<T>
-  >;
+  compose<I1>(e: ICEW1<I1, I>): EnhancerChain<I1, O>;
+  compose<I1>(e: ICEW2<I1, I>): EnhancerChain<I1, O>;
   checkThis(fn?: (i: I, o: O) => void): EnhancerChain<I, O>;
   enhance<I1 extends I>(c: ComponentType<I1>): ComponentType<O>;
   enhance<I1 extends Partial<I>>(c: ComponentType<I1>): ComponentType<O>;
-  forOutPropsOfType<O1>(props?: O1): EnhancerChain<I, O1>;
-  omitKeysForOutProps<K extends keyof O>(
+  forPropsOfType<P>(props?: P): EnhancerChain<P, P>;
+  omitKeysFromOutProps<K extends keyof O>(
     ...keys: K[]
   ): EnhancerChain<I, OmitKeys<O, K>>;
+  keepKeysInOutProps<K extends keyof O>(
+    ...keys: K[]
+  ): EnhancerChain<I, Pick<O, K>>;
 }
 
 /** Create an enhancer chain. */
-export function createEnhancerChain<I = {}, O = I>(): EnhancerChain<I, O> {
+export function createEnhancerChain(): EnhancerChain<{}, {}> {
   const enhancers: any[] = [];
 
-  const enhancerChain: EnhancerChain<I, O> = {
+  const enhancerChain: EnhancerChain<{}, {}> = {
     compose: (e: Function) => {
       enhancers.push(e);
       return enhancerChain as any;
     },
     checkThis: () => enhancerChain,
-    forOutPropsOfType: () => enhancerChain as any,
+    forPropsOfType: () => enhancerChain as any,
     enhance: (c: any) => compose<any, any>(...enhancers)(c),
-    omitKeysForOutProps: () => enhancerChain as any
+    omitKeysFromOutProps: () => enhancerChain as any,
+    keepKeysInOutProps: () => enhancerChain as any
   };
 
   return enhancerChain;

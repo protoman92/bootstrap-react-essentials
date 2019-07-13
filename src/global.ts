@@ -11,6 +11,7 @@ declare global {
   type DeepReadonly<T> = import("ts-essentials").DeepReadonly<T>;
   type DeepWriteable<T> = import("ts-essentials").DeepWritable<T>;
   type FunctionalEnhancer<I, O> = (c: ComponentType<I>) => ComponentType<O>;
+  type Override<A, B> = { [K in Exclude<keyof A, keyof B>]: A[K] } & B;
 
   type URLQueryMap = Readonly<{
     [K: string]: readonly (string)[] | string;

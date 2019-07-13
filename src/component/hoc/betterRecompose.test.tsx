@@ -9,7 +9,13 @@ import {
   onlyUpdateForKeys,
   withState
 } from "./betterRecompose";
-import { urlDataSync, cursorPagination, cursorPaginationData } from "./dataHOC";
+import {
+  CursorPaginatedData,
+  cursorPagination,
+  cursorPaginationData,
+  urlDataSync,
+  URLDataSyncOutProps
+} from "./dataHOC";
 
 describe("Enhancer chain", () => {
   it("Should work correctly", async () => {
@@ -26,6 +32,7 @@ describe("Enhancer chain", () => {
     const TestComponent = createTestComponent<EndProps>();
 
     const enhancer = createEnhancerChain()
+      .forPropsOfType<{}>()
       .compose(withState("a", "setA", 0))
       .compose(withState("b", "setB", 0))
       .compose(mapProps(({ a, b }) => ({ a: a + 1, b: b + 1 })))
@@ -41,9 +48,10 @@ describe("Enhancer chain", () => {
       .compose(onlyUpdateForKeys("a", "b", "c"))
       .compose(omitKeys("setC"))
       .compose(withState("d", "setD", 1))
-      .forOutPropsOfType<EndProps>()
-      .omitKeysForOutProps("a", "b", "c")
-      .forOutPropsOfType<{}>();
+      .forPropsOfType<EndProps>()
+      .omitKeysFromOutProps("a", "b")
+      .keepKeysInOutProps("c")
+      .omitKeysFromOutProps("c");
 
     const EnhancedComponent = enhancer.enhance(TestComponent);
     const WrappedElement = mount(<EnhancedComponent />);
@@ -58,11 +66,18 @@ describe("Enhancer chain", () => {
   });
 
   it("Mongo pagination and auto URL data sync", async () => {
-    createEnhancerChain()
-      .compose(cursorPagination<{}>())
+    const EnhancedComponent = createEnhancerChain()
+      .forPropsOfType<URLDataSyncOutProps<CursorPaginatedData<[]>>>()
+      .compose(cursorPagination())
+      .checkThis((i, o) => o.onDataChange)
       .compose(urlDataSync())
+      .checkThis((i, o) => i.additionalDataQuery)
       .compose(cursorPaginationData())
-      .checkThis((i, o) => i.data)
       .enhance(() => <div />);
+
+    <EnhancedComponent
+      initialData={{ count: 0, limit: 0, results: [] }}
+      urlDataSync={undefined as any}
+    />;
   });
 });
