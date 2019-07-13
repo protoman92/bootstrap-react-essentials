@@ -6,13 +6,13 @@ import baseMapProps from "recompose/mapProps";
 import baseOnlyUpdateForKeys from "recompose/onlyUpdateForKeys";
 import baseWithState from "recompose/withState";
 import {
-  AutoURLDataSyncEnhancer,
-  AutoURLDataSyncInProps,
+  URLDataSyncEnhancer,
+  URLDataSyncInProps,
   CursorPaginationEnhancer,
   CursorPaginationInProps,
   CursorPaginationDataEnhancer,
   CursorPaginationDataInProps,
-  AutoURLDataSyncOutProps,
+  URLDataSyncOutProps,
   CursorPaginationDataOutProps
 } from "./dataHOC";
 
@@ -75,11 +75,8 @@ interface EnhancerChain<I, O> {
   compose<I1>(e: FunctionalEnhancer<I1, I>): EnhancerChain<I1, O>;
   compose<I1>(e: ICEW<I1, I>): EnhancerChain<I1, O>;
   compose<Data>(
-    e: AutoURLDataSyncEnhancer<Data>
-  ): EnhancerChain<
-    I & AutoURLDataSyncInProps<Data>,
-    O & AutoURLDataSyncOutProps<Data>
-  >;
+    e: URLDataSyncEnhancer<Data>
+  ): EnhancerChain<I & URLDataSyncInProps<Data>, O & URLDataSyncOutProps<Data>>;
   compose<Data>(
     e: CursorPaginationEnhancer<Data>
   ): EnhancerChain<

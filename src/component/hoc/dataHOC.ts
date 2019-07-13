@@ -1,11 +1,11 @@
 import mapProps from "recompose/mapProps";
 import withStateHandlers from "recompose/withStateHandlers";
-import { mergeQueryMaps, createSparseArray } from "../../utils";
+import { createSparseArray, mergeQueryMaps } from "../../utils";
 import { createEnhancerChain, lifecycle } from "./betterRecompose";
 
 // ############################ AUTO URL DATA SYNC ############################
 
-export interface AutoURLDataSyncInProps<Data> {
+export interface URLDataSyncInProps<Data> {
   readonly data: Data;
   readonly dataError: Error | null | undefined;
   readonly isLoadingData: boolean;
@@ -18,7 +18,7 @@ export interface AutoURLDataSyncInProps<Data> {
   updateURLQuery(...queries: readonly URLQueryMap[]): void;
 }
 
-export interface AutoURLDataSyncOutProps<Data> {
+export interface URLDataSyncOutProps<Data> {
   /** This is used for the data synchronizer. */
   readonly additionalDataQuery?: Repository.URLDataSync.AdditionalQuery;
   readonly initialData: Data;
@@ -26,10 +26,10 @@ export interface AutoURLDataSyncOutProps<Data> {
   readonly onDataChange?: (data: Data) => void;
 }
 
-export interface AutoURLDataSyncEnhancer<Data>
+export interface URLDataSyncEnhancer<Data>
   extends FunctionalEnhancer<
-    AutoURLDataSyncInProps<Data>,
-    AutoURLDataSyncOutProps<Data>
+    URLDataSyncInProps<Data>,
+    URLDataSyncOutProps<Data>
   > {}
 
 /**
@@ -43,8 +43,8 @@ export interface AutoURLDataSyncEnhancer<Data>
  * when implementing the backend to handle these requests that it never returns
  * null/undefined (as per REST design standards).
  */
-export function autoURLDataSync<Data>(): AutoURLDataSyncEnhancer<Data> {
-  return createEnhancerChain<AutoURLDataSyncOutProps<Data>>()
+export function urlDataSync<Data>(): URLDataSyncEnhancer<Data> {
+  return createEnhancerChain<URLDataSyncOutProps<Data>>()
     .compose(
       withStateHandlers(
         ({ initialData: data }) => ({
@@ -138,7 +138,7 @@ export interface CursorPaginatedData<Data> {
 
 export interface CursorPaginationInProps<Data>
   extends Pick<
-    AutoURLDataSyncOutProps<CursorPaginatedData<Data>>,
+    URLDataSyncOutProps<CursorPaginatedData<Data>>,
     "additionalDataQuery" | "onDataChange"
   > {
   readonly page: number;
@@ -187,14 +187,11 @@ export function cursorPagination<Data>(): CursorPaginationEnhancer<Data> {
 }
 
 export interface CursorPaginationDataInProps<T>
-  extends Pick<AutoURLDataSyncInProps<readonly (T | undefined)[]>, "data">,
+  extends Pick<URLDataSyncInProps<readonly (T | undefined)[]>, "data">,
     Pick<CursorPaginationInProps<any>, "page"> {}
 
 export interface CursorPaginationDataOutProps<T>
-  extends Pick<
-      AutoURLDataSyncInProps<CursorPaginatedData<readonly T[]>>,
-      "data"
-    >,
+  extends Pick<URLDataSyncInProps<CursorPaginatedData<readonly T[]>>, "data">,
     Pick<CursorPaginationInProps<any>, "page"> {}
 
 export interface CursorPaginationDataEnhancer<T>
