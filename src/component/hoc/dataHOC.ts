@@ -11,6 +11,7 @@ export interface URLDataSyncInProps<Data> {
   readonly isLoadingData: boolean;
   readonly urlQuery: URLQueryMap;
 
+  getData(): void;
   saveData(): void;
   updateData(data: Partial<Data>): void;
 
@@ -20,7 +21,7 @@ export interface URLDataSyncInProps<Data> {
 
 export interface URLDataSyncOutProps<Data> {
   /** This is used for the data synchronizer. */
-  readonly additionalDataQuery?: Repository.URLDataSync.AdditionalQuery;
+  readonly additionalDataQuery?: URLQueryMap;
   readonly initialData: Data;
   readonly urlDataSync: Repository.URLDataSync;
   readonly onDataChange?: (data: Data) => void;
@@ -37,7 +38,7 @@ export interface URLDataSyncOutProps<Data> {
  * when implementing the backend to handle these requests that it never returns
  * null/undefined (as per REST design standards).
  */
-export const urlDataSync = function<Data, OutProps = {}>(): FunctionalEnhancer<
+export function urlDataSync<Data, OutProps = {}>(): FunctionalEnhancer<
   URLDataSyncInProps<Data> & OutProps,
   URLDataSyncOutProps<Data> & OutProps
 > {
@@ -117,14 +118,13 @@ export const urlDataSync = function<Data, OutProps = {}>(): FunctionalEnhancer<
     .compose(
       lifecycle({
         async componentDidMount() {
-          const { urlDataSync, getData, setURLQuery } = this.props;
+          const { urlDataSync, setURLQuery } = this.props;
           const query = await urlDataSync.getURLQuery();
           setURLQuery(query);
-          await getData();
         }
       })
     ).enhance as any;
-};
+}
 
 // ############################# DATA PAGINATION #############################
 
@@ -138,10 +138,7 @@ export interface CursorPaginationInProps<T>
   extends Pick<
     URLDataSyncOutProps<CursorPaginatedData<T>>,
     "additionalDataQuery" | "initialData" | "onDataChange"
-  > {
-  goToNextPage: () => void;
-  goToPreviousPage: () => void;
-}
+  > {}
 
 /**
  * This works with the auto-sync HOC to provide paginated data. It is assumed
@@ -161,8 +158,8 @@ export function cursorPagination<T, OutProps = {}>(): FunctionalEnhancer<
           previous: undefined as string | undefined
         },
         {
-          setNext: () => (next: string | undefined) => ({ next }),
-          setPrevious: () => (previous: string | undefined) => ({ previous })
+          setNext: () => next => ({ next }),
+          setPrevious: () => previous => ({ previous })
         }
       )
     )
@@ -174,14 +171,6 @@ export function cursorPagination<T, OutProps = {}>(): FunctionalEnhancer<
         onDataChange: ({ next: n, previous: p }: CursorPaginatedData<T>) => {
           setNext(n);
           setPrevious(p);
-        },
-        goToNextPage: () => {
-          setPrevious(next);
-          setNext(undefined);
-        },
-        goToPreviousPage: () => {
-          setNext(previous);
-          setNext(undefined);
         }
       }))
     ).enhance as any;
@@ -190,8 +179,7 @@ export function cursorPagination<T, OutProps = {}>(): FunctionalEnhancer<
 // ############################## FULL MANAGED ##############################
 
 export interface URLPaginatedDataSyncInProps<T>
-  extends URLDataSyncInProps<readonly (T | undefined)[]>,
-    Pick<CursorPaginationInProps<any>, "goToPreviousPage" | "goToNextPage"> {}
+  extends URLDataSyncInProps<readonly (T | undefined)[]> {}
 
 export interface URLPaginatedDataSyncOutProps<T>
   extends Pick<URLDataSyncOutProps<CursorPaginatedData<T>>, "urlDataSync"> {}

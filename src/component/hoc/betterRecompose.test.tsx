@@ -64,10 +64,7 @@ describe("Enhancer chain", () => {
   });
 
   it("Mongo pagination and auto URL data sync", async () => {
-    const enhancer = createEnhancerChain().startWith(
-      urlPaginatedDataSync<number>()
-    );
-
+    const enhancer = createEnhancerChain().startWith(urlPaginatedDataSync());
     const TestComponent = enhancer.infuseWithProps(() => <div />);
     const EnhancedComponent = enhancer.enhance(TestComponent);
     <EnhancedComponent urlDataSync={undefined as any} />;
@@ -77,11 +74,10 @@ describe("Enhancer chain", () => {
       dataError={null}
       isLoadingData={false}
       urlQuery={{}}
+      getData={() => {}}
       saveData={() => {}}
       updateData={() => {}}
       updateURLQuery={() => {}}
-      goToNextPage={() => {}}
-      goToPreviousPage={() => {}}
     />;
   });
 });

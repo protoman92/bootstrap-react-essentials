@@ -17,7 +17,7 @@ describe("Auto URL data sync", () => {
   }
 
   const initial: Data = { a: 0, b: 0, c: 0 };
-  const additionalDataQuery = { a: 1, b: 2, c: 3 };
+  const additionalDataQuery = { a: "1", b: "2", c: "3" };
   const TestComponent = createTestComponent<URLDataSyncInProps<Data>>();
   const EnhancedComponent = urlDataSyncHOC<Data>()(TestComponent);
   let urlDataSync: Repository.URLDataSync;
@@ -44,7 +44,7 @@ describe("Auto URL data sync", () => {
     );
   });
 
-  it("Should perform get automatically", async () => {
+  it("Should perform get correctly", async () => {
     // Setup
     const data: Data = { a: 0, b: 1, c: 2 };
     const query = { a: "1", b: "2" };
@@ -53,6 +53,8 @@ describe("Auto URL data sync", () => {
 
     // When
     const wrapper = mount(WrappedElement);
+    const { getData } = wrapper.find(TestComponent).props();
+    getData();
     await asyncTimeout(1);
 
     wrapper.setProps({});
@@ -72,9 +74,7 @@ describe("Auto URL data sync", () => {
 
   it("Should perform save correctly", async () => {
     // Setup
-    const data: Data = { a: 0, b: 1, c: 2 };
     const newData: Data = { a: 1, b: 2, c: 3 };
-    when(urlDataSync.get(anything())).thenResolve(data);
     when(urlDataSync.update(anything())).thenResolve(newData);
     when(urlDataSync.getURLQuery()).thenResolve({});
 
@@ -97,6 +97,7 @@ describe("Auto URL data sync", () => {
     await asyncTimeout(1);
 
     wrapper.setProps({});
+
     const { data: result, isLoadingData: loading2 } = wrapper
       .find(TestComponent)
       .props();
@@ -104,7 +105,6 @@ describe("Auto URL data sync", () => {
     await asyncTimeout(1);
 
     // Then
-    verify(urlDataSync.get(deepEqual(additionalDataQuery))).once();
     verify(urlDataSync.update(deepEqual(newData))).once();
     expect(loading2).toBeFalsy();
     expect(result).toEqual(newData);
@@ -130,7 +130,7 @@ describe("Auto URL data sync", () => {
     const { urlQuery } = wrapper.find(TestComponent).props();
 
     // Then
-    verify(urlDataSync.get(deepEqual(additionalDataQuery))).twice();
+    verify(urlDataSync.get(deepEqual(additionalDataQuery))).once();
     verify(urlDataSync.getURLQuery()).once();
     verify(urlDataSync.updateURLQuery(deepEqual(query)));
     expect(urlQuery).toEqual(query);
@@ -144,6 +144,8 @@ describe("Auto URL data sync", () => {
 
     // When
     const wrapper = mount(WrappedElement);
+    const { getData } = wrapper.find(TestComponent).props();
+    await getData();
     await asyncTimeout(1);
 
     wrapper.setProps({});
@@ -186,7 +188,7 @@ describe("Cursor pagination", () => {
     WrappedElement = <EnhancedComponent />;
   });
 
-  it("Should set next correctly", async () => {
+  it("Should set next/previous correctly", async () => {
     // Setup
     function createData(
       next: string,
