@@ -5,10 +5,9 @@ import { createTestComponent } from "../../testUtils";
 import {
   createEnhancerChain,
   lifecycle,
-  withState,
-  onlyUpdateForKeys
+  onlyUpdateForKeys,
+  withState
 } from "./betterRecompose";
-import { urlPaginatedDataSync } from "./dataHOC";
 
 describe("Enhancer chain", () => {
   it("Should work correctly", async () => {
@@ -25,8 +24,7 @@ describe("Enhancer chain", () => {
     const TestComponent = createTestComponent<EndProps>();
 
     const enhancer = createEnhancerChain()
-      .forPropsOfType<{}>()
-      .compose(withState("a", "setA", 0))
+      .startWith(withState("a", "setA", 0))
       .compose(withState("b", "setB", 0))
       .compose(mapProps(({ a, b }) => ({ a: a + 1, b: b + 1 })))
       .compose(withState("c", "setC", 0))
@@ -51,35 +49,17 @@ describe("Enhancer chain", () => {
       .omitKeysFromInProps("d")
       .omitKeysFromOutProps("a", "b", "c", "d");
 
+    const InfusedComponent = enhancer.infuseWithProps(TestComponent);
     const EnhancedComponent = enhancer.enhance(TestComponent);
     const WrappedElement = mount(<EnhancedComponent />);
 
     // When
+    <InfusedComponent a={1} b={1} c={1} />;
     const { a, b, c } = WrappedElement.find(TestComponent).props();
 
     // Then
     expect(a).toEqual(1);
     expect(b).toEqual(1);
     expect(c).toEqual(1);
-  });
-
-  it("Mongo pagination and auto URL data sync", async () => {
-    const enhancer = createEnhancerChain().startWith(urlPaginatedDataSync());
-    const TestComponent = enhancer.infuseWithProps(() => <div />);
-    const EnhancedComponent = enhancer.enhance(TestComponent);
-    <EnhancedComponent urlDataSync={undefined as any} />;
-
-    <TestComponent
-      data={[]}
-      dataError={null}
-      isLoadingData={false}
-      urlQuery={{}}
-      getData={() => {}}
-      saveData={() => {}}
-      updateData={() => {}}
-      updateURLQuery={() => {}}
-      goToNextPage={() => {}}
-      goToPreviousPage={() => {}}
-    />;
   });
 });

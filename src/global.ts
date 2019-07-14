@@ -14,7 +14,7 @@ declare global {
   type Override<A, B> = { [K in Exclude<keyof A, keyof B>]: A[K] } & B;
 
   type URLQueryMap = Readonly<{
-    [K: string]: readonly (string)[] | string;
+    [K: string]: readonly (string)[] | string | undefined;
   }>;
 
   /** Common Redux state type that contains some basic properties. */

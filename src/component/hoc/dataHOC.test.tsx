@@ -1,22 +1,12 @@
 import { mount } from "enzyme";
 import React from "react";
-import {
-  anything,
-  deepEqual,
-  instance,
-  spy,
-  verify,
-  when,
-  capture
-} from "ts-mockito";
+import { anything, deepEqual, instance, spy, verify, when } from "ts-mockito";
 import { asyncTimeout, createTestComponent } from "../../testUtils";
 import {
-  CursorPaginatedData,
-  cursorPaginationState,
-  cursorPaginationTrigger,
+  cursorPagination,
+  urlCursorPaginatedDataSync,
   urlDataSync as urlDataSyncHOC,
-  URLDataSyncInProps,
-  urlPaginatedDataSync
+  URLDataSyncInProps
 } from "./dataHOC";
 
 describe("Auto URL data sync", () => {
@@ -34,8 +24,6 @@ describe("Auto URL data sync", () => {
   let onDataChange: (data: Data) => void;
 
   beforeEach(() => {
-    onDataChange = jest.fn();
-
     urlDataSync = spy<Repository.URLDataSync>({
       get: () => Promise.reject(""),
       update: () => Promise.reject(""),
@@ -46,7 +34,6 @@ describe("Auto URL data sync", () => {
     WrappedElement = (
       <EnhancedComponent
         initialData={initial}
-        onDataChange={onDataChange}
         urlDataSync={instance(urlDataSync)}
       />
     );
@@ -186,9 +173,9 @@ describe("Auto URL data sync", () => {
   });
 });
 
-describe("Cursor pagination state", () => {
-  const TestComponent = createTestComponent(cursorPaginationState);
-  const EnhancedComponent = cursorPaginationState()(TestComponent);
+describe("Cursor pagination", () => {
+  const TestComponent = createTestComponent(cursorPagination);
+  const EnhancedComponent = cursorPagination()(TestComponent);
   let WrappedElement: JSX.Element;
 
   beforeEach(() => {
@@ -197,119 +184,27 @@ describe("Cursor pagination state", () => {
 
   it("Should set next/previous correctly", async () => {
     // Setup
-    function createData(
-      next: string,
-      previous: string
-    ): CursorPaginatedData<{}> {
-      return { results: [], next, previous };
-    }
-
     const wrapper = mount(WrappedElement);
 
-    // When && Then: Base case.
-    const { onDataChange: onChange1 } = wrapper.find(TestComponent).props();
-    onChange1!(createData("next1", "prev1"));
+    // When && Then: Next.
+    const { setNext } = wrapper.find(TestComponent).props();
+    setNext("next");
     wrapper.setProps({});
+    const { next } = wrapper.find(TestComponent).props();
+    expect(next).toEqual("next");
 
-    const { additionalDataQuery: query1 } = wrapper.find(TestComponent).props();
-    expect(query1).toEqual({ next: "next1", previous: "prev1" });
-
-    // When && Then: Next page.
-    const { onDataChange: onChange2 } = wrapper.find(TestComponent).props();
-    onChange2!(createData("next2", "next1"));
+    // When && Then: Previous.
+    const { setPrevious } = wrapper.find(TestComponent).props();
+    setPrevious("previous");
     wrapper.setProps({});
-
-    const { additionalDataQuery: query2 } = wrapper.find(TestComponent).props();
-    expect(query2).toEqual({ next: "next2", previous: "next1" });
-
-    // When && Then: Previous page.
-    const { onDataChange: onChange3 } = wrapper.find(TestComponent).props();
-    onChange3!(createData("next1", "prev1"));
-    wrapper.setProps({});
-
-    const { additionalDataQuery: query3 } = wrapper.find(TestComponent).props();
-    expect(query3).toEqual({ next: "next1", previous: "prev1" });
-
-    // When && Then: Previous page without changing page.
-    const { onDataChange: onChange4 } = wrapper.find(TestComponent).props();
-    onChange4!(createData("prev1", "prev2"));
-    wrapper.setProps({});
-
-    const { additionalDataQuery: query4 } = wrapper.find(TestComponent).props();
-    expect(query4).toEqual({ next: "prev1", previous: "prev2" });
-  });
-});
-
-describe("Cursor pagination trigger", () => {
-  const TestComponent = createTestComponent(cursorPaginationTrigger);
-  const EnhancedComponent = cursorPaginationTrigger()(TestComponent);
-
-  it("Should go to next page correctly", async () => {
-    // Setup
-    const getData = jest.fn();
-    const setNext = jest.fn();
-    const setPrevious = jest.fn();
-    const next = "next";
-    const previous = "previous";
-
-    const WrappedElement = (
-      <EnhancedComponent
-        next={next}
-        previous={previous}
-        getData={getData}
-        setNext={setNext}
-        setPrevious={setPrevious}
-      />
-    );
-
-    // When
-    const { goToNextPage } = mount(WrappedElement)
-      .find(TestComponent)
-      .props();
-
-    goToNextPage();
-
-    // Then
-    expect(setNext).toHaveBeenCalledWith(undefined);
-    expect(setPrevious).toHaveBeenCalledWith(next);
-    expect(getData).toBeCalledTimes(1);
-  });
-
-  it("Should go to previous page correctly", async () => {
-    // Setup
-    const getData = jest.fn();
-    const setNext = jest.fn();
-    const setPrevious = jest.fn();
-    const next = "next";
-    const previous = "previous";
-
-    const WrappedElement = (
-      <EnhancedComponent
-        next={next}
-        previous={previous}
-        getData={getData}
-        setNext={setNext}
-        setPrevious={setPrevious}
-      />
-    );
-
-    // When
-    const { goToPreviousPage } = mount(WrappedElement)
-      .find(TestComponent)
-      .props();
-
-    goToPreviousPage();
-
-    // Then
-    expect(setPrevious).toHaveBeenCalledWith(undefined);
-    expect(setNext).toHaveBeenCalledWith(previous);
-    expect(getData).toBeCalledTimes(1);
+    const { previous } = wrapper.find(TestComponent).props();
+    expect(previous).toEqual("previous");
   });
 });
 
 describe("URL paginated data sync", () => {
-  const TestComponent = createTestComponent(urlPaginatedDataSync);
-  const EnhancedComponent = urlPaginatedDataSync()(TestComponent);
+  const TestComponent = createTestComponent(urlCursorPaginatedDataSync);
+  const EnhancedComponent = urlCursorPaginatedDataSync()(TestComponent);
   let urlDataSync: Repository.URLDataSync;
   let WrappedElement: JSX.Element;
 
@@ -336,10 +231,65 @@ describe("URL paginated data sync", () => {
 
     // When
     const wrapper = mount(WrappedElement);
+    const { getData } = wrapper.find(TestComponent).props();
+    getData();
+    await asyncTimeout(1);
+
+    wrapper.setProps({});
     const { goToNextPage } = wrapper.find(TestComponent).props();
     goToNextPage();
     await asyncTimeout(1);
 
     // Then
+    verify(
+      urlDataSync.get(deepEqual({ next: undefined, previous: "next" }))
+    ).once();
+  });
+
+  it("Should go to previous page correctly", async () => {
+    // Setup
+    when(urlDataSync.get(anything())).thenResolve({
+      results: [],
+      next: "next",
+      previous: "previous"
+    });
+
+    when(urlDataSync.getURLQuery()).thenResolve({});
+
+    // When
+    const wrapper = mount(WrappedElement);
+    const { getData } = wrapper.find(TestComponent).props();
+    getData();
+    await asyncTimeout(1);
+
+    wrapper.setProps({});
+    const { goToPreviousPage } = wrapper.find(TestComponent).props();
+    goToPreviousPage();
+    await asyncTimeout(1);
+
+    // Then
+    verify(
+      urlDataSync.get(deepEqual({ next: "previous", previous: undefined }))
+    ).once();
+  });
+
+  it("Should map data to array", async () => {
+    // Setup
+    const results = [1, 2, 3];
+    when(urlDataSync.get(anything())).thenResolve({ results });
+    when(urlDataSync.getURLQuery()).thenResolve({});
+
+    // When
+    const wrapper = mount(WrappedElement);
+    const { getData } = wrapper.find(TestComponent).props();
+    getData();
+    await asyncTimeout(1);
+
+    wrapper.setProps({});
+    const { data } = wrapper.find(TestComponent).props();
+    await asyncTimeout(1);
+
+    // Then
+    expect(data).toEqual(results);
   });
 });

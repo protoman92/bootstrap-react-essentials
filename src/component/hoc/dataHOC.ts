@@ -1,9 +1,8 @@
-import { withHandlers } from "recompose";
+import { compose, withHandlers } from "recompose";
 import mapProps from "recompose/mapProps";
 import withStateHandlers from "recompose/withStateHandlers";
 import { mergeQueryMaps } from "../../utils";
-import { createEnhancerChain, lifecycle } from "./betterRecompose";
-import { compose } from "recompose";
+import { lifecycle } from "./betterRecompose";
 
 // ############################ AUTO URL DATA SYNC ############################
 
@@ -22,11 +21,8 @@ export interface URLDataSyncInProps<Data> {
 }
 
 export interface URLDataSyncOutProps<Data> {
-  /** This is used for the data synchronizer. */
-  readonly additionalDataQuery?: URLQueryMap;
   readonly initialData: Data;
   readonly urlDataSync: Repository.URLDataSync;
-  readonly onDataChange?: (data: Data) => void;
 }
 
 class URLDataSyncFactory<
@@ -128,7 +124,7 @@ export function urlDataSync<Data, OutProps = {}>() {
   return new URLDataSyncFactory<Data>().newInstance<OutProps>();
 }
 
-// ############################# DATA PAGINATION #############################
+// ############################# CURSOR PAGINATION #############################
 
 export interface CursorPaginatedData<T> {
   readonly results: readonly T[];
@@ -136,11 +132,7 @@ export interface CursorPaginatedData<T> {
   readonly previous?: string;
 }
 
-export interface CursorPaginationStateInProps<T>
-  extends Pick<
-    URLDataSyncOutProps<CursorPaginatedData<T>>,
-    "additionalDataQuery" | "initialData" | "onDataChange"
-  > {
+export interface CursorPaginationInProps<T> {
   readonly next?: string;
   readonly previous?: string;
   setNext(next?: string): void;
@@ -153,102 +145,84 @@ export interface CursorPaginationStateInProps<T>
  * above format - the cursor markers will be stored internally and fed the next
  * time we perform a GET request.
  */
-export function cursorPaginationState<T, OutProps = {}>(): FunctionalEnhancer<
-  CursorPaginationStateInProps<T> & OutProps,
+export function cursorPagination<T, OutProps = {}>(): FunctionalEnhancer<
+  CursorPaginationInProps<T> & OutProps,
   OutProps
 > {
-  return createEnhancerChain()
-    .forPropsOfType<OutProps>()
-    .compose(
-      withStateHandlers(
-        {
-          next: undefined as string | undefined,
-          previous: undefined as string | undefined
-        },
-        {
-          setNext: () => next => ({ next }),
-          setPrevious: () => previous => ({ previous })
-        }
-      )
+  return compose(
+    withStateHandlers(
+      {
+        next: undefined as string | undefined,
+        previous: undefined as string | undefined
+      },
+      {
+        setNext: () => next => ({ next }),
+        setPrevious: () => previous => ({ previous })
+      }
     )
-    .compose(
-      mapProps(({ next, previous, setNext, setPrevious, ...rest }) => ({
-        ...rest,
-        additionalDataQuery: { next, previous },
-        initialData: { results: [] } as CursorPaginatedData<T>,
-        setNext,
-        setPrevious,
-        onDataChange: ({ next: n, previous: p }: CursorPaginatedData<T>) => {
-          setNext(n);
-          setPrevious(p);
-        }
-      }))
-    ).enhance as any;
+  );
 }
 
-export interface CursorPaginationTriggerInProps {
+// ############################### FULL MANAGED ###############################
+
+export interface URLCursorPaginatedDataSyncInProps<T>
+  extends URLDataSyncInProps<CursorPaginatedData<T>> {
   goToNextPage(): void;
   goToPreviousPage(): void;
 }
 
-export interface CursorPaginationTriggerOutProps
-  extends Pick<URLDataSyncInProps<any>, "getData">,
-    Pick<
-      CursorPaginationStateInProps<any>,
-      "next" | "previous" | "setNext" | "setPrevious"
-    > {}
+export interface URLCursorPaginatedDataSyncOutProps<T>
+  extends URLDataSyncOutProps<CursorPaginatedData<T>> {}
 
-/** Trigger pagination and re-sync of data. This works with url data sync. */
-export function cursorPaginationTrigger<OutProps = {}>(): FunctionalEnhancer<
-  CursorPaginationTriggerInProps & OutProps,
-  CursorPaginationTriggerOutProps & OutProps
+class URLCursorPaginatedDataSyncFactory<T> extends URLDataSyncFactory<
+  CursorPaginatedData<T>,
+  URLCursorPaginatedDataSyncInProps<T>,
+  URLCursorPaginatedDataSyncOutProps<T>
 > {
-  return createEnhancerChain()
-    .forPropsOfType<CursorPaginationTriggerOutProps>()
-    .compose(
+  onDataChanged(props: any, data: CursorPaginatedData<T>) {
+    const { setNext, setPrevious } = props;
+    const { next, previous } = data;
+    setNext(next);
+    setPrevious(previous);
+    super.onDataChanged(props, data);
+  }
+
+  newInstance() {
+    return compose<any, any>(
+      cursorPagination(),
+      super.newInstance(),
       withHandlers({
-        goToNextPage: ({ next, getData, setNext, setPrevious }) => () => {
-          setPrevious(next);
-          setNext(undefined);
-          getData();
+        goToNextPage: (props: any) => () => {
+          const { next } = props;
+          this.getData(props, { next: undefined, previous: next });
         },
-        goToPreviousPage: ({
-          previous,
-          getData,
-          setNext,
-          setPrevious
-        }) => () => {
-          setNext(previous);
-          setPrevious(undefined);
-          getData();
+        goToPreviousPage: (props: any) => () => {
+          const { previous } = props;
+          this.getData(props, { next: previous, previous: undefined });
         }
       })
-    ).enhance as any;
+    );
+  }
 }
-
-// ############################## FULL MANAGED ##############################
-
-export interface URLPaginatedDataSyncInProps<T>
-  extends URLDataSyncInProps<readonly (T | undefined)[]>,
-    Pick<CursorPaginationTriggerInProps, "goToNextPage" | "goToPreviousPage"> {}
-
-export interface URLPaginatedDataSyncOutProps<T>
-  extends Pick<URLDataSyncOutProps<CursorPaginatedData<T>>, "urlDataSync"> {}
 
 /**
  * This HOC automatically manages pagination data sync, and is best used to
  * display table data. For other kinds of data use the data sync HOC.
  */
-export function urlPaginatedDataSync<T>(): FunctionalEnhancer<
-  URLPaginatedDataSyncInProps<T>,
-  URLPaginatedDataSyncOutProps<T>
+export function urlCursorPaginatedDataSync<T>(): FunctionalEnhancer<
+  URLDataSyncInProps<readonly T[]> &
+    Pick<
+      URLCursorPaginatedDataSyncInProps<any>,
+      "goToNextPage" | "goToPreviousPage"
+    >,
+  Pick<URLCursorPaginatedDataSyncOutProps<T>, "urlDataSync">
 > {
-  return createEnhancerChain()
-    .forPropsOfType<URLDataSyncOutProps<CursorPaginatedData<T>>>()
-    .compose(cursorPaginationState())
-    .compose(urlDataSync())
-    .compose(cursorPaginationTrigger())
-    .compose(
-      mapProps(({ data: { results: data }, ...rest }) => ({ ...rest, data }))
-    ).enhance as any;
+  return compose(
+    mapProps(props => ({
+      initialData: { results: [] } as CursorPaginatedData<T>,
+      ...props
+    })),
+    new URLCursorPaginatedDataSyncFactory().newInstance(),
+    mapProps(({ data: { results: data }, ...rest }: any) => ({ ...rest, data }))
+  );
 }
