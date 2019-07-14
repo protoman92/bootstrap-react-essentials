@@ -1,8 +1,9 @@
+import { withHandlers } from "recompose";
 import mapProps from "recompose/mapProps";
 import withStateHandlers from "recompose/withStateHandlers";
 import { mergeQueryMaps } from "../../utils";
 import { createEnhancerChain, lifecycle } from "./betterRecompose";
-import { withHandlers } from "recompose";
+import { compose } from "recompose";
 
 // ############################ AUTO URL DATA SYNC ############################
 
@@ -28,6 +29,90 @@ export interface URLDataSyncOutProps<Data> {
   readonly onDataChange?: (data: Data) => void;
 }
 
+class URLDataSyncFactory<
+  Data,
+  I extends URLDataSyncInProps<Data> = URLDataSyncInProps<Data>,
+  O extends URLDataSyncOutProps<Data> = URLDataSyncOutProps<Data>
+> {
+  private async callAPI<T>(
+    { setDataError, setIsLoadingData }: any,
+    callFn: () => Promise<T>,
+    successFn: (res: T) => void
+  ) {
+    setDataError(undefined);
+    setIsLoadingData(true);
+
+    try {
+      const res = await callFn();
+      successFn(res);
+    } catch (e) {
+      setDataError(e);
+    } finally {
+      setIsLoadingData(false);
+    }
+  }
+
+  getData(props: any, additionalQuery?: URLQueryMap) {
+    const { urlDataSync, setData } = props;
+
+    return this.callAPI(
+      props,
+      () => urlDataSync.get(additionalQuery),
+      (data: Data) => {
+        this.onDataChanged(props, data);
+        setData(data);
+      }
+    );
+  }
+
+  onDataChanged(props: any, data: Data) {}
+
+  newInstance<OutProps>(): FunctionalEnhancer<I & OutProps, O & OutProps> {
+    return compose(
+      withStateHandlers(
+        ({ initialData: data }: any) => ({
+          data,
+          dataError: undefined as Error | undefined,
+          isLoadingData: false,
+          urlQuery: {} as URLQueryMap
+        }),
+        {
+          setData: () => data => ({ data }),
+          setDataError: () => dataError => ({ dataError }),
+          setIsLoadingData: () => isLoadingData => ({ isLoadingData }),
+          setURLQuery: () => urlQuery => ({ urlQuery })
+        }
+      ),
+      withHandlers({
+        getData: props => () => this.getData(props),
+        saveData: (props: any) => () => {
+          const { data, urlDataSync, setData } = props;
+          this.callAPI(props, () => urlDataSync.update(data), setData);
+        },
+        updateData: (props: any) => (newData: Partial<Data>) => {
+          const { data, setData } = props;
+          setData(Object.assign({}, data, newData));
+        },
+        updateURLQuery: (props: any) => async (
+          ...queries: readonly URLQueryMap[]
+        ) => {
+          const { urlDataSync, setURLQuery } = props;
+          setURLQuery(mergeQueryMaps(...queries));
+          await urlDataSync.updateURLQuery(...queries);
+          await this.getData(props);
+        }
+      }),
+      lifecycle({
+        async componentDidMount() {
+          const { urlDataSync, setURLQuery } = this.props as any;
+          const query = await urlDataSync.getURLQuery();
+          setURLQuery(query);
+        }
+      })
+    );
+  }
+}
+
 /**
  * Automatically sync with current URL by requesting data from server using
  * said URL. This is assuming there is data provided by the server at current
@@ -39,92 +124,8 @@ export interface URLDataSyncOutProps<Data> {
  * when implementing the backend to handle these requests that it never returns
  * null/undefined (as per REST design standards).
  */
-export function urlDataSync<Data, OutProps = {}>(): FunctionalEnhancer<
-  URLDataSyncInProps<Data> & OutProps,
-  URLDataSyncOutProps<Data> & OutProps
-> {
-  return createEnhancerChain()
-    .forPropsOfType<URLDataSyncOutProps<Data> & OutProps>()
-    .compose(
-      withStateHandlers(
-        ({ initialData: data }) => ({
-          data,
-          dataError: undefined as Error | undefined,
-          isLoadingData: false,
-          urlQuery: {} as URLQueryMap
-        }),
-        {
-          setData: (state, { onDataChange }) => data => {
-            !!onDataChange && onDataChange(data);
-            return { data };
-          },
-          setDataError: () => dataError => ({ dataError }),
-          setIsLoadingData: () => isLoadingData => ({
-            isLoadingData
-          }),
-          setURLQuery: () => urlQuery => ({ urlQuery })
-        }
-      )
-    )
-    .compose(
-      mapProps(
-        ({
-          additionalDataQuery,
-          urlDataSync,
-          data,
-          setData,
-          setDataError,
-          setIsLoadingData,
-          setURLQuery,
-          ...rest
-        }) => {
-          async function callAPI<T>(
-            callFn: () => Promise<T>,
-            successFn: (res: T) => void
-          ) {
-            setDataError(undefined);
-            setIsLoadingData(true);
-
-            try {
-              const res = await callFn();
-              successFn(res);
-            } catch (e) {
-              setDataError(e);
-            } finally {
-              setIsLoadingData(false);
-            }
-          }
-
-          const getData = () =>
-            callAPI(() => urlDataSync.get(additionalDataQuery), setData);
-
-          return {
-            ...rest,
-            data,
-            getData,
-            setURLQuery,
-            urlDataSync,
-            saveData: () => callAPI(() => urlDataSync.update(data), setData),
-            updateData: (newData: Partial<Data>) =>
-              setData(Object.assign({}, data, newData)),
-            updateURLQuery: async (...queries: readonly URLQueryMap[]) => {
-              setURLQuery(mergeQueryMaps(...queries));
-              await urlDataSync.updateURLQuery(...queries);
-              await getData();
-            }
-          };
-        }
-      )
-    )
-    .compose(
-      lifecycle({
-        async componentDidMount() {
-          const { urlDataSync, setURLQuery } = this.props;
-          const query = await urlDataSync.getURLQuery();
-          setURLQuery(query);
-        }
-      })
-    ).enhance as any;
+export function urlDataSync<Data, OutProps = {}>() {
+  return new URLDataSyncFactory<Data>().newInstance<OutProps>();
 }
 
 // ############################# DATA PAGINATION #############################
@@ -228,7 +229,8 @@ export function cursorPaginationTrigger<OutProps = {}>(): FunctionalEnhancer<
 // ############################## FULL MANAGED ##############################
 
 export interface URLPaginatedDataSyncInProps<T>
-  extends URLDataSyncInProps<readonly (T | undefined)[]> {}
+  extends URLDataSyncInProps<readonly (T | undefined)[]>,
+    Pick<CursorPaginationTriggerInProps, "goToNextPage" | "goToPreviousPage"> {}
 
 export interface URLPaginatedDataSyncOutProps<T>
   extends Pick<URLDataSyncOutProps<CursorPaginatedData<T>>, "urlDataSync"> {}
@@ -245,7 +247,8 @@ export function urlPaginatedDataSync<T>(): FunctionalEnhancer<
     .forPropsOfType<URLDataSyncOutProps<CursorPaginatedData<T>>>()
     .compose(cursorPaginationState())
     .compose(urlDataSync())
+    .compose(cursorPaginationTrigger())
     .compose(
-      mapProps(({ data: { results }, ...rest }) => ({ ...rest, data: results }))
+      mapProps(({ data: { results: data }, ...rest }) => ({ ...rest, data }))
     ).enhance as any;
 }

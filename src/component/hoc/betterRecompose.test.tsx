@@ -78,6 +78,8 @@ describe("Enhancer chain", () => {
       saveData={() => {}}
       updateData={() => {}}
       updateURLQuery={() => {}}
+      goToNextPage={() => {}}
+      goToPreviousPage={() => {}}
     />;
   });
 });

@@ -1,13 +1,22 @@
 import { mount } from "enzyme";
 import React from "react";
-import { anything, deepEqual, instance, spy, verify, when } from "ts-mockito";
+import {
+  anything,
+  deepEqual,
+  instance,
+  spy,
+  verify,
+  when,
+  capture
+} from "ts-mockito";
 import { asyncTimeout, createTestComponent } from "../../testUtils";
 import {
   CursorPaginatedData,
   cursorPaginationState,
+  cursorPaginationTrigger,
   urlDataSync as urlDataSyncHOC,
   URLDataSyncInProps,
-  cursorPaginationTrigger
+  urlPaginatedDataSync
 } from "./dataHOC";
 
 describe("Auto URL data sync", () => {
@@ -18,7 +27,6 @@ describe("Auto URL data sync", () => {
   }
 
   const initial: Data = { a: 0, b: 0, c: 0 };
-  const additionalDataQuery = { a: "1", b: "2", c: "3" };
   const TestComponent = createTestComponent<URLDataSyncInProps<Data>>();
   const EnhancedComponent = urlDataSyncHOC<Data>()(TestComponent);
   let urlDataSync: Repository.URLDataSync;
@@ -37,7 +45,6 @@ describe("Auto URL data sync", () => {
 
     WrappedElement = (
       <EnhancedComponent
-        additionalDataQuery={additionalDataQuery}
         initialData={initial}
         onDataChange={onDataChange}
         urlDataSync={instance(urlDataSync)}
@@ -65,9 +72,8 @@ describe("Auto URL data sync", () => {
       .props();
 
     // Then
-    verify(urlDataSync.get(deepEqual(additionalDataQuery))).once();
+    verify(urlDataSync.get(undefined)).once();
     verify(urlDataSync.getURLQuery()).once();
-    expect(onDataChange).toHaveBeenCalledTimes(1);
     expect(isLoadingData).toBeFalsy();
     expect(result).toEqual(data);
     expect(urlQuery).toEqual(query);
@@ -131,7 +137,7 @@ describe("Auto URL data sync", () => {
     const { urlQuery } = wrapper.find(TestComponent).props();
 
     // Then
-    verify(urlDataSync.get(deepEqual(additionalDataQuery))).once();
+    verify(urlDataSync.get(undefined)).once();
     verify(urlDataSync.getURLQuery()).once();
     verify(urlDataSync.updateURLQuery(deepEqual(query)));
     expect(urlQuery).toEqual(query);
@@ -298,5 +304,42 @@ describe("Cursor pagination trigger", () => {
     expect(setPrevious).toHaveBeenCalledWith(undefined);
     expect(setNext).toHaveBeenCalledWith(previous);
     expect(getData).toBeCalledTimes(1);
+  });
+});
+
+describe("URL paginated data sync", () => {
+  const TestComponent = createTestComponent(urlPaginatedDataSync);
+  const EnhancedComponent = urlPaginatedDataSync()(TestComponent);
+  let urlDataSync: Repository.URLDataSync;
+  let WrappedElement: JSX.Element;
+
+  beforeEach(() => {
+    urlDataSync = spy<Repository.URLDataSync>({
+      get: () => Promise.reject(""),
+      update: () => Promise.reject(""),
+      updateURLQuery: () => Promise.reject(""),
+      getURLQuery: () => Promise.reject("")
+    });
+
+    WrappedElement = <EnhancedComponent urlDataSync={instance(urlDataSync)} />;
+  });
+
+  it("Should go to next page correctly", async () => {
+    // Setup
+    when(urlDataSync.get(anything())).thenResolve({
+      results: [],
+      next: "next",
+      previous: "previous"
+    });
+
+    when(urlDataSync.getURLQuery()).thenResolve({});
+
+    // When
+    const wrapper = mount(WrappedElement);
+    const { goToNextPage } = wrapper.find(TestComponent).props();
+    goToNextPage();
+    await asyncTimeout(1);
+
+    // Then
   });
 });
