@@ -2,6 +2,7 @@ import mapProps from "recompose/mapProps";
 import withStateHandlers from "recompose/withStateHandlers";
 import { mergeQueryMaps } from "../../utils";
 import { createEnhancerChain, lifecycle } from "./betterRecompose";
+import { withHandlers } from "recompose";
 
 // ############################ AUTO URL DATA SYNC ############################
 
@@ -134,19 +135,25 @@ export interface CursorPaginatedData<T> {
   readonly previous?: string;
 }
 
-export interface CursorPaginationInProps<T>
+export interface CursorPaginationStateInProps<T>
   extends Pick<
     URLDataSyncOutProps<CursorPaginatedData<T>>,
     "additionalDataQuery" | "initialData" | "onDataChange"
-  > {}
+  > {
+  readonly next?: string;
+  readonly previous?: string;
+  setNext(next?: string): void;
+  setPrevious(previous?: string): void;
+}
 
 /**
- * This works with the auto-sync HOC to provide paginated data. It is assumed
- * that the server will return the data in the above format - the cursor markers
- * will be stored internally and fed the next time we perform a GET request.
+ * This works with the auto-sync HOC to provide pagination state (but does not
+ * trigger the sync). It is assumed that the server will return the data in the
+ * above format - the cursor markers will be stored internally and fed the next
+ * time we perform a GET request.
  */
-export function cursorPagination<T, OutProps = {}>(): FunctionalEnhancer<
-  CursorPaginationInProps<T> & OutProps,
+export function cursorPaginationState<T, OutProps = {}>(): FunctionalEnhancer<
+  CursorPaginationStateInProps<T> & OutProps,
   OutProps
 > {
   return createEnhancerChain()
@@ -168,11 +175,53 @@ export function cursorPagination<T, OutProps = {}>(): FunctionalEnhancer<
         ...rest,
         additionalDataQuery: { next, previous },
         initialData: { results: [] } as CursorPaginatedData<T>,
+        setNext,
+        setPrevious,
         onDataChange: ({ next: n, previous: p }: CursorPaginatedData<T>) => {
           setNext(n);
           setPrevious(p);
         }
       }))
+    ).enhance as any;
+}
+
+export interface CursorPaginationTriggerInProps {
+  goToNextPage(): void;
+  goToPreviousPage(): void;
+}
+
+export interface CursorPaginationTriggerOutProps
+  extends Pick<URLDataSyncInProps<any>, "getData">,
+    Pick<
+      CursorPaginationStateInProps<any>,
+      "next" | "previous" | "setNext" | "setPrevious"
+    > {}
+
+/** Trigger pagination and re-sync of data. This works with url data sync. */
+export function cursorPaginationTrigger<OutProps = {}>(): FunctionalEnhancer<
+  CursorPaginationTriggerInProps & OutProps,
+  CursorPaginationTriggerOutProps & OutProps
+> {
+  return createEnhancerChain()
+    .forPropsOfType<CursorPaginationTriggerOutProps>()
+    .compose(
+      withHandlers({
+        goToNextPage: ({ next, getData, setNext, setPrevious }) => () => {
+          setPrevious(next);
+          setNext(undefined);
+          getData();
+        },
+        goToPreviousPage: ({
+          previous,
+          getData,
+          setNext,
+          setPrevious
+        }) => () => {
+          setNext(previous);
+          setPrevious(undefined);
+          getData();
+        }
+      })
     ).enhance as any;
 }
 
@@ -194,7 +243,7 @@ export function urlPaginatedDataSync<T>(): FunctionalEnhancer<
 > {
   return createEnhancerChain()
     .forPropsOfType<URLDataSyncOutProps<CursorPaginatedData<T>>>()
-    .compose(cursorPagination())
+    .compose(cursorPaginationState())
     .compose(urlDataSync())
     .compose(
       mapProps(({ data: { results }, ...rest }) => ({ ...rest, data: results }))

@@ -5,7 +5,7 @@ export function createURLDataSyncRepository(
   { history, location }: Pick<Window, "history" | "location">,
   client: RelativeHTTPClient
 ): Repository.URLDataSync {
-  function urlParams(additionalQuery?: Repository.URLDataSync.AdditionalQuery) {
+  function urlParams(additionalQuery?: URLQueryMap) {
     return {
       ...additionalQuery,
       ...querystring.parse(location.search.slice(1))

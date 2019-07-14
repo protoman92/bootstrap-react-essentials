@@ -52,18 +52,15 @@ declare module "recompose" {
   }
 }
 
+type AllEnhancer<I, O> = FunctionalEnhancer<I, O> | ICEW1<I, O> | ICEW2<I, O>;
+
 /**
  * An enhancer chain allows for type-safe HOC composition. Instead of using
  * compose, use this chain to ensure type-safeness for the final component.
  */
 export interface EnhancerChain<I, O> {
   readonly enhance: FunctionalEnhancer<I, O>;
-  startWith<I1, O1>(e: FunctionalEnhancer<I1, O1>): EnhancerChain<I1, O1>;
-  startWith<I1, O1>(e: ICEW1<I1, O1>): EnhancerChain<I1, O1>;
-  startWith<I1, O1>(e: ICEW2<I1, O1>): EnhancerChain<I1, O1>;
-  compose<I1>(e: FunctionalEnhancer<I1, I>): EnhancerChain<I1, O>;
-  compose<I1>(e: ICEW1<I1, I>): EnhancerChain<I1, O>;
-  compose<I1>(e: ICEW2<I1, I>): EnhancerChain<I1, O>;
+  compose<I1>(e: AllEnhancer<I1, I>): EnhancerChain<I1, O>;
   checkThis(fn?: (i: I, o: O) => void): EnhancerChain<I, O>;
   forPropsOfType<P>(props?: P): EnhancerChain<P, P>;
   omitKeysFromInProps<K extends keyof I>(
@@ -81,12 +78,17 @@ export interface EnhancerChain<I, O> {
   infuseWithProps(c: ComponentType<any>): ComponentType<I>;
 }
 
+interface UnstartedEnhancerChain extends EnhancerChain<{}, {}> {
+  /** Similar to compose, but replace all generics for enhancer chain. */
+  startWith<I1, O1>(e: AllEnhancer<I1, O1>): EnhancerChain<I1, O1>;
+}
+
 /** Create an enhancer chain. */
-export function createEnhancerChain(): EnhancerChain<{}, {}> {
+export function createEnhancerChain(): UnstartedEnhancerChain {
   const enhancers: any[] = [];
 
-  const enhancerChain: EnhancerChain<{}, {}> = {
-    startWith: (e: Function) => enhancerChain.compose(e as any),
+  const enhancerChain: UnstartedEnhancerChain = {
+    startWith: (e: any) => enhancerChain.compose(e) as any,
     compose: (e: Function) => {
       enhancers.push(e);
       return enhancerChain as any;

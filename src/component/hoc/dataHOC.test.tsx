@@ -4,9 +4,10 @@ import { anything, deepEqual, instance, spy, verify, when } from "ts-mockito";
 import { asyncTimeout, createTestComponent } from "../../testUtils";
 import {
   CursorPaginatedData,
-  cursorPagination,
+  cursorPaginationState,
   urlDataSync as urlDataSyncHOC,
-  URLDataSyncInProps
+  URLDataSyncInProps,
+  cursorPaginationTrigger
 } from "./dataHOC";
 
 describe("Auto URL data sync", () => {
@@ -179,9 +180,9 @@ describe("Auto URL data sync", () => {
   });
 });
 
-describe("Cursor pagination", () => {
-  const TestComponent = createTestComponent(cursorPagination);
-  const EnhancedComponent = cursorPagination()(TestComponent);
+describe("Cursor pagination state", () => {
+  const TestComponent = createTestComponent(cursorPaginationState);
+  const EnhancedComponent = cursorPaginationState()(TestComponent);
   let WrappedElement: JSX.Element;
 
   beforeEach(() => {
@@ -230,5 +231,72 @@ describe("Cursor pagination", () => {
 
     const { additionalDataQuery: query4 } = wrapper.find(TestComponent).props();
     expect(query4).toEqual({ next: "prev1", previous: "prev2" });
+  });
+});
+
+describe("Cursor pagination trigger", () => {
+  const TestComponent = createTestComponent(cursorPaginationTrigger);
+  const EnhancedComponent = cursorPaginationTrigger()(TestComponent);
+
+  it("Should go to next page correctly", async () => {
+    // Setup
+    const getData = jest.fn();
+    const setNext = jest.fn();
+    const setPrevious = jest.fn();
+    const next = "next";
+    const previous = "previous";
+
+    const WrappedElement = (
+      <EnhancedComponent
+        next={next}
+        previous={previous}
+        getData={getData}
+        setNext={setNext}
+        setPrevious={setPrevious}
+      />
+    );
+
+    // When
+    const { goToNextPage } = mount(WrappedElement)
+      .find(TestComponent)
+      .props();
+
+    goToNextPage();
+
+    // Then
+    expect(setNext).toHaveBeenCalledWith(undefined);
+    expect(setPrevious).toHaveBeenCalledWith(next);
+    expect(getData).toBeCalledTimes(1);
+  });
+
+  it("Should go to previous page correctly", async () => {
+    // Setup
+    const getData = jest.fn();
+    const setNext = jest.fn();
+    const setPrevious = jest.fn();
+    const next = "next";
+    const previous = "previous";
+
+    const WrappedElement = (
+      <EnhancedComponent
+        next={next}
+        previous={previous}
+        getData={getData}
+        setNext={setNext}
+        setPrevious={setPrevious}
+      />
+    );
+
+    // When
+    const { goToPreviousPage } = mount(WrappedElement)
+      .find(TestComponent)
+      .props();
+
+    goToPreviousPage();
+
+    // Then
+    expect(setPrevious).toHaveBeenCalledWith(undefined);
+    expect(setNext).toHaveBeenCalledWith(previous);
+    expect(getData).toBeCalledTimes(1);
   });
 });
