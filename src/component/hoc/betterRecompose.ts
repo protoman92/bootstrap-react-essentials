@@ -5,6 +5,7 @@ import compose from "recompose/compose";
 import baseLifecyle from "recompose/lifecycle";
 import baseOnlyUpdateForKeys from "recompose/onlyUpdateForKeys";
 import baseWithState from "recompose/withState";
+import { StrictOmit } from "ts-essentials";
 
 type LifecycleF<P, S, I> = import("recompose").ReactLifeCycleFunctions<P, S, I>;
 
@@ -65,10 +66,10 @@ export interface EnhancerChain<I, O> {
   forPropsOfType<P>(props?: P): EnhancerChain<P, P>;
   omitKeysFromInProps<K extends keyof I>(
     ...keys: readonly K[]
-  ): EnhancerChain<OmitKeys<I, K>, O>;
+  ): EnhancerChain<StrictOmit<I, K>, O>;
   omitKeysFromOutProps<K extends keyof O>(
     ...keys: K[]
-  ): EnhancerChain<I, OmitKeys<O, K>>;
+  ): EnhancerChain<I, StrictOmit<O, K>>;
   keepKeysForInProps<K extends keyof I>(
     ...keys: K[]
   ): EnhancerChain<Pick<I, K>, O>;

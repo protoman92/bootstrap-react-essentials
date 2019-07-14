@@ -1,6 +1,6 @@
 {
   "name": "bootstrap-react-essentials",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Library of essentials for a bootstrapped React project",
   "scripts": {
     "build": "tsc",
@@ -36,7 +36,7 @@
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
     "react-redux": "^7.1.0",
-    "ts-essentials": "^2.0.12",
+    "ts-essentials": "^3.0.0",
     "ts-jest": "^24.0.2",
     "ts-mockito": "^2.3.1",
     "typescript": "^3.5.2"

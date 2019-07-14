@@ -1,17 +1,12 @@
 import { AxiosRequestConfig } from "axios";
 import { ComponentType } from "react";
 import { Action } from "redux";
+import { StrictOmit } from "ts-essentials";
 
 declare module "recompose" {}
 
 declare global {
-  type OmitKeys<T, K extends keyof T> = import("ts-essentials").Omit<T, K>;
-  type DeepPartial<T> = import("ts-essentials").DeepPartial<T>;
-  type DeepRequired<T> = import("ts-essentials").DeepRequired<T>;
-  type DeepReadonly<T> = import("ts-essentials").DeepReadonly<T>;
-  type DeepWriteable<T> = import("ts-essentials").DeepWritable<T>;
   type FunctionalEnhancer<I, O> = (c: ComponentType<I>) => ComponentType<O>;
-  type Override<A, B> = { [K in Exclude<keyof A, keyof B>]: A[K] } & B;
 
   type URLQueryMap = Readonly<{
     [K: string]: readonly (string)[] | string | undefined;
@@ -28,7 +23,7 @@ declare global {
   }
 
   namespace HTTPClient {
-    type Config = OmitKeys<AxiosRequestConfig, "baseURL">;
+    type Config = StrictOmit<AxiosRequestConfig, "baseURL">;
   }
 
   /** Standard HTTP client that can perform API requests. */
