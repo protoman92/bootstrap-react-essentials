@@ -165,19 +165,21 @@ export function cursorPagination<T, OutProps = {}>(): FunctionalEnhancer<
 
 // ############################### FULL MANAGED ###############################
 
-export interface URLCursorPaginatedDataSyncInProps<T>
-  extends URLDataSyncInProps<CursorPaginatedData<T>> {
-  goToNextPage(): void;
-  goToPreviousPage(): void;
-}
+declare namespace URLCursorPaginatedDataSyncFactory {
+  export interface InProps<T>
+    extends URLDataSyncInProps<CursorPaginatedData<T>> {
+    goToNextPage(): void;
+    goToPreviousPage(): void;
+  }
 
-export interface URLCursorPaginatedDataSyncOutProps<T>
-  extends URLDataSyncOutProps<CursorPaginatedData<T>> {}
+  export interface OutProps<T>
+    extends URLDataSyncOutProps<CursorPaginatedData<T>> {}
+}
 
 class URLCursorPaginatedDataSyncFactory<T> extends URLDataSyncFactory<
   CursorPaginatedData<T>,
-  URLCursorPaginatedDataSyncInProps<T>,
-  URLCursorPaginatedDataSyncOutProps<T>
+  URLCursorPaginatedDataSyncFactory.InProps<T>,
+  URLCursorPaginatedDataSyncFactory.OutProps<T>
 > {
   onDataChanged(props: any, data: CursorPaginatedData<T>) {
     const { setNext, setPrevious } = props;
@@ -205,17 +207,23 @@ class URLCursorPaginatedDataSyncFactory<T> extends URLDataSyncFactory<
   }
 }
 
+export interface URLCursorPaginatedDataSyncInProps<T>
+  extends URLDataSyncInProps<readonly T[]>,
+    Pick<
+      URLCursorPaginatedDataSyncFactory.InProps<T>,
+      "goToNextPage" | "goToPreviousPage"
+    > {}
+
+export interface URLCursorPaginatedDataSyncOutProps<T>
+  extends Pick<URLCursorPaginatedDataSyncFactory.OutProps<T>, "urlDataSync"> {}
+
 /**
  * This HOC automatically manages pagination data sync, and is best used to
  * display table data. For other kinds of data use the data sync HOC.
  */
 export function urlCursorPaginatedDataSync<T>(): FunctionalEnhancer<
-  URLDataSyncInProps<readonly T[]> &
-    Pick<
-      URLCursorPaginatedDataSyncInProps<any>,
-      "goToNextPage" | "goToPreviousPage"
-    >,
-  Pick<URLCursorPaginatedDataSyncOutProps<T>, "urlDataSync">
+  URLCursorPaginatedDataSyncInProps<T>,
+  URLCursorPaginatedDataSyncOutProps<T>
 > {
   return compose(
     mapProps(props => ({
@@ -223,6 +231,9 @@ export function urlCursorPaginatedDataSync<T>(): FunctionalEnhancer<
       ...props
     })),
     new URLCursorPaginatedDataSyncFactory().newInstance(),
-    mapProps(({ data: { results: data }, ...rest }: any) => ({ ...rest, data }))
+    mapProps(({ data: { results: data }, ...rest }: any) => ({
+      ...rest,
+      data
+    }))
   );
 }

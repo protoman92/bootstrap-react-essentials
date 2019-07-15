@@ -1,4 +1,4 @@
-import { deepEqual, instance, spy, verify, capture } from "ts-mockito";
+import { deepEqual, instance, spy, verify } from "ts-mockito";
 import { createBaseClient, createRelativeClient } from "./client";
 
 describe("HTTP client", () => {

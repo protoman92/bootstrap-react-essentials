@@ -21,7 +21,6 @@ describe("Auto URL data sync", () => {
   const EnhancedComponent = urlDataSyncHOC<Data>()(TestComponent);
   let urlDataSync: Repository.URLDataSync;
   let WrappedElement: JSX.Element;
-  let onDataChange: (data: Data) => void;
 
   beforeEach(() => {
     urlDataSync = spy<Repository.URLDataSync>({
