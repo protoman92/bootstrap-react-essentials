@@ -1,4 +1,5 @@
 import querystring from "querystring";
+import { toArray } from "../utils";
 
 /** This repository allows synchronization of data with current URL. */
 export function createURLDataSyncRepository(
@@ -18,7 +19,11 @@ export function createURLDataSyncRepository(
     update: newData =>
       client.patch(location.pathname, newData, { params: urlParams() }),
     updateURLQuery: async query => {
-      const merged = querystring.stringify(query);
+      const merged = querystring.stringify(
+        Object.entries(query)
+          .filter(([, value]) => !!value && !!toArray(value).length)
+          .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {})
+      );
       history.replaceState({}, "", !!merged ? `?${merged}` : "");
     },
     getURLQuery: async () => {
