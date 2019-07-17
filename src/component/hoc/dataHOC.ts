@@ -1,7 +1,6 @@
 import { compose, withHandlers } from "recompose";
 import mapProps from "recompose/mapProps";
 import withStateHandlers from "recompose/withStateHandlers";
-import { mergeQueryMaps } from "../../utils";
 import { lifecycle } from "./betterRecompose";
 
 // ############################ AUTO URL DATA SYNC ############################
@@ -17,7 +16,7 @@ export interface URLDataSyncInProps<Data> {
   updateData(data: Partial<Data>): void;
 
   /** Update URL query parameters without reloading and trigger a re-sync. */
-  updateURLQuery(...queries: readonly URLQueryMap[]): void;
+  updateURLQuery(query: URLQueryMap): void;
 }
 
 export interface URLDataSyncOutProps<Data> {
@@ -89,12 +88,10 @@ class URLDataSyncFactory<
           const { data, setData } = props;
           setData(Object.assign({}, data, newData));
         },
-        updateURLQuery: (props: any) => async (
-          ...queries: readonly URLQueryMap[]
-        ) => {
+        updateURLQuery: (props: any) => async (query: URLQueryMap) => {
           const { urlDataSync, setURLQuery } = props;
-          setURLQuery(mergeQueryMaps(...queries));
-          await urlDataSync.updateURLQuery(...queries);
+          setURLQuery(query);
+          await urlDataSync.updateURLQuery(query);
           await this.getData(props);
         }
       }),

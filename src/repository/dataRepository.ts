@@ -17,12 +17,9 @@ export function createURLDataSyncRepository(
       client.get(location.pathname, { params: urlParams(additionalQuery) }),
     update: newData =>
       client.patch(location.pathname, newData, { params: urlParams() }),
-    updateURLQuery: async (...queries) => {
-      const merged = queries
-        .map(query => querystring.stringify(query))
-        .join("&");
-
-      history.replaceState({}, "", `?${merged}`);
+    updateURLQuery: async query => {
+      const merged = querystring.stringify(query);
+      history.replaceState({}, "", !!merged ? `?${merged}` : "");
     },
     getURLQuery: async () => {
       const { search } = location;
