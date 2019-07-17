@@ -90,9 +90,12 @@ class URLDataSyncFactory<
         },
         updateURLQuery: (props: any) => async (query: URLQueryMap) => {
           const { urlDataSync, setURLQuery } = props;
-          setURLQuery(query);
-          await urlDataSync.updateURLQuery(query);
-          await this.getData(props);
+
+          (await urlDataSync.updateURLQuery(query)) === "changed" &&
+            (await (async () => {
+              setURLQuery(query);
+              await this.getData(props);
+            })());
         }
       }),
       lifecycle({

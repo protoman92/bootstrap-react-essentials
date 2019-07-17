@@ -107,7 +107,7 @@ describe("Auto URL data sync", () => {
     // Setup
     when(urlDataSync.get(anything())).thenResolve({});
     when(urlDataSync.getURLQuery()).thenResolve({});
-    when(urlDataSync.updateURLQuery(anything())).thenResolve(undefined);
+    when(urlDataSync.updateURLQuery(anything())).thenResolve("changed");
     const query = { a: "1", b: "2" };
 
     // When
@@ -127,6 +127,28 @@ describe("Auto URL data sync", () => {
     verify(urlDataSync.getURLQuery()).once();
     verify(urlDataSync.updateURLQuery(deepEqual(query)));
     expect(urlQuery).toEqual(query);
+  });
+
+  it("Should not get data if urlQuery does not change", async () => {
+    // Setup
+    when(urlDataSync.get(anything())).thenResolve({});
+    when(urlDataSync.getURLQuery()).thenResolve({});
+    when(urlDataSync.updateURLQuery(anything())).thenResolve("unchanged");
+
+    // When
+    const wrapper = mount(WrappedElement);
+    await asyncTimeout(1);
+
+    wrapper.setProps({});
+    const { updateURLQuery } = wrapper.find(TestComponent).props();
+    updateURLQuery({});
+    await asyncTimeout(1);
+
+    // Then
+    verify(urlDataSync.get(undefined)).never();
+    verify(urlDataSync.get(anything())).never();
+    verify(urlDataSync.getURLQuery()).once();
+    verify(urlDataSync.updateURLQuery(deepEqual({})));
   });
 
   it("Should set error when getting data fails", async () => {

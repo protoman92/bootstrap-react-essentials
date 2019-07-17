@@ -52,7 +52,7 @@ declare global {
       update<T>(newData: T): Promise<T>;
 
       /** Update URL query without reloading the page. */
-      updateURLQuery(query: URLQueryMap): Promise<void>;
+      updateURLQuery(query: URLQueryMap): Promise<"changed" | "unchanged">;
       getURLQuery(): Promise<URLQueryMap>;
     }
   }
