@@ -16,7 +16,6 @@ describe("Auto URL data sync", () => {
     readonly c: number;
   }
 
-  const initial: Data = { a: 0, b: 0, c: 0 };
   const TestComponent = createTestComponent<URLDataSyncInProps<Data>>();
   const EnhancedComponent = urlDataSyncHOC<Data>()(TestComponent);
   let urlDataSync: Repository.URLDataSync;
@@ -30,12 +29,7 @@ describe("Auto URL data sync", () => {
       getURLQuery: () => Promise.reject("")
     });
 
-    WrappedElement = (
-      <EnhancedComponent
-        initialData={initial}
-        urlDataSync={instance(urlDataSync)}
-      />
-    );
+    WrappedElement = <EnhancedComponent urlDataSync={instance(urlDataSync)} />;
   });
 
   it("Should perform get correctly", async () => {

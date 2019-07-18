@@ -1,12 +1,11 @@
-import { compose, withHandlers } from "recompose";
-import mapProps from "recompose/mapProps";
+import { compose, withHandlers, withProps } from "recompose";
 import withStateHandlers from "recompose/withStateHandlers";
 import { lifecycle } from "./betterRecompose";
 
 // ############################ AUTO URL DATA SYNC ############################
 
 export interface URLDataSyncInProps<Data> {
-  readonly data: Data;
+  readonly data: Data | null | undefined;
   readonly dataError: Error | null | undefined;
   readonly isLoadingData: boolean;
   readonly urlQuery: URLQueryMap;
@@ -20,7 +19,6 @@ export interface URLDataSyncInProps<Data> {
 }
 
 export interface URLDataSyncOutProps<Data> {
-  readonly initialData: Data;
   readonly urlDataSync: Repository.URLDataSync;
 }
 
@@ -65,8 +63,8 @@ class URLDataSyncFactory<
   newInstance<OutProps>(): FunctionalEnhancer<I & OutProps, O & OutProps> {
     return compose(
       withStateHandlers(
-        ({ initialData: data }: any) => ({
-          data,
+        () => ({
+          data: undefined as Data | undefined,
           dataError: undefined as Error | undefined,
           isLoadingData: false,
           urlQuery: {} as URLQueryMap
@@ -226,14 +224,9 @@ export function urlCursorPaginatedDataSync<T>(): FunctionalEnhancer<
   URLCursorPaginatedDataSyncOutProps<T>
 > {
   return compose(
-    mapProps(props => ({
-      initialData: { results: [] } as CursorPaginatedData<T>,
-      ...props
-    })),
     new URLCursorPaginatedDataSyncFactory().newInstance(),
-    mapProps(({ data: { results: data }, ...rest }: any) => ({
-      ...rest,
-      data
+    withProps(({ data }: any) => ({
+      data: !!data && !!data.results ? data.results : []
     }))
   );
 }
