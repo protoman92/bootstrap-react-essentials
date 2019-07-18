@@ -1,5 +1,7 @@
 import { compose, withHandlers, withProps } from "recompose";
 import withStateHandlers from "recompose/withStateHandlers";
+import { StrictOmit } from "ts-essentials";
+import { toArray } from "../../utils";
 import { lifecycle } from "./betterRecompose";
 
 // ############################ AUTO URL DATA SYNC ############################
@@ -206,11 +208,13 @@ class URLCursorPaginatedDataSyncFactory<T> extends URLDataSyncFactory<
 }
 
 export interface URLCursorPaginatedDataSyncInProps<T>
-  extends URLDataSyncInProps<readonly T[]>,
+  extends StrictOmit<URLDataSyncInProps<readonly T[]>, "data">,
     Pick<
       URLCursorPaginatedDataSyncFactory.InProps<T>,
       "goToNextPage" | "goToPreviousPage"
-    > {}
+    > {
+  readonly data: readonly T[];
+}
 
 export interface URLCursorPaginatedDataSyncOutProps<T>
   extends Pick<URLCursorPaginatedDataSyncFactory.OutProps<T>, "urlDataSync"> {}
@@ -226,7 +230,7 @@ export function urlCursorPaginatedDataSync<T>(): FunctionalEnhancer<
   return compose(
     new URLCursorPaginatedDataSyncFactory().newInstance(),
     withProps(({ data }: any) => ({
-      data: !!data && !!data.results ? data.results : []
+      data: !!data && !!data.results ? toArray(data.results) : []
     }))
   );
 }
