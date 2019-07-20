@@ -130,13 +130,19 @@ export interface CursorPaginatedData<T> {
   readonly results: readonly T[];
   readonly next?: string;
   readonly previous?: string;
+  readonly hasNext?: boolean;
+  readonly hasPrevious?: boolean;
 }
 
 export interface CursorPaginationInProps<T> {
   readonly next?: string;
+  readonly hasNext?: boolean;
   readonly previous?: string;
+  readonly hasPrevious?: string;
   setNext(next?: string): void;
+  setHasNext(hasNext?: boolean): void;
   setPrevious(previous?: string): void;
+  setHasPrevious(previous?: boolean): void;
 }
 
 /**
@@ -153,11 +159,15 @@ export function cursorPagination<T, OutProps = {}>(): FunctionalEnhancer<
     withStateHandlers(
       {
         next: undefined as string | undefined,
-        previous: undefined as string | undefined
+        hasNext: undefined as boolean | undefined,
+        previous: undefined as string | undefined,
+        hasPrevious: undefined as boolean | undefined
       },
       {
         setNext: () => next => ({ next }),
-        setPrevious: () => previous => ({ previous })
+        setHasNext: () => hasNext => ({ hasNext }),
+        setPrevious: () => previous => ({ previous }),
+        setHasPrevious: () => hasPrevious => ({ hasPrevious })
       }
     )
   );
@@ -182,10 +192,12 @@ class URLCursorPaginatedDataSyncFactory<T> extends URLDataSyncFactory<
   URLCursorPaginatedDataSyncFactory.OutProps<T>
 > {
   onDataChanged(props: any, data: CursorPaginatedData<T>) {
-    const { setNext, setPrevious } = props;
-    const { next, previous } = data;
+    const { setNext, setHasNext, setPrevious, setHasPrevious } = props;
+    const { next, hasNext, previous, hasPrevious } = data;
     setNext(next);
+    setHasNext(hasNext);
     setPrevious(previous);
+    setHasPrevious(hasPrevious);
     super.onDataChanged(props, data);
   }
 
@@ -196,11 +208,11 @@ class URLCursorPaginatedDataSyncFactory<T> extends URLDataSyncFactory<
       withHandlers({
         goToNextPage: (props: any) => () => {
           const { next } = props;
-          this.getData(props, { next: undefined, previous: next });
+          this.getData(props, { next: next, previous: undefined });
         },
         goToPreviousPage: (props: any) => () => {
           const { previous } = props;
-          this.getData(props, { next: previous, previous: undefined });
+          this.getData(props, { previous: previous, next: undefined });
         }
       })
     );

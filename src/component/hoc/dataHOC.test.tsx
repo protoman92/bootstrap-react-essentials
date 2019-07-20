@@ -202,18 +202,22 @@ describe("Cursor pagination", () => {
     const wrapper = mount(WrappedElement);
 
     // When && Then: Next.
-    const { setNext } = wrapper.find(TestComponent).props();
+    const { setNext, setHasNext } = wrapper.find(TestComponent).props();
     setNext("next");
+    setHasNext(true);
     wrapper.setProps({});
-    const { next } = wrapper.find(TestComponent).props();
+    const { next, hasNext } = wrapper.find(TestComponent).props();
     expect(next).toEqual("next");
+    expect(hasNext).toEqual(hasNext);
 
     // When && Then: Previous.
-    const { setPrevious } = wrapper.find(TestComponent).props();
+    const { setPrevious, setHasPrevious } = wrapper.find(TestComponent).props();
     setPrevious("previous");
+    setHasPrevious(true);
     wrapper.setProps({});
-    const { previous } = wrapper.find(TestComponent).props();
+    const { previous, hasPrevious } = wrapper.find(TestComponent).props();
     expect(previous).toEqual("previous");
+    expect(hasPrevious).toEqual(true);
   });
 });
 
@@ -257,7 +261,7 @@ describe("URL paginated data sync", () => {
 
     // Then
     verify(
-      urlDataSync.get(deepEqual({ next: undefined, previous: "next" }))
+      urlDataSync.get(deepEqual({ next: "next", previous: undefined }))
     ).once();
   });
 
@@ -284,7 +288,7 @@ describe("URL paginated data sync", () => {
 
     // Then
     verify(
-      urlDataSync.get(deepEqual({ next: "previous", previous: undefined }))
+      urlDataSync.get(deepEqual({ previous: "previous", next: undefined }))
     ).once();
   });
 
