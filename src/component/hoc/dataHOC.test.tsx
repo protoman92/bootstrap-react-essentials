@@ -3,7 +3,6 @@ import React from "react";
 import { anything, deepEqual, instance, spy, verify, when } from "ts-mockito";
 import { asyncTimeout, createTestComponent } from "../../testUtils";
 import {
-  cursorPagination,
   urlCursorPaginatedDataSync,
   urlDataSync as urlDataSyncHOC,
   URLDataSyncInProps
@@ -212,39 +211,6 @@ describe("Auto URL data sync", () => {
   });
 });
 
-describe("Cursor pagination", () => {
-  const TestComponent = createTestComponent(cursorPagination);
-  const EnhancedComponent = cursorPagination()(TestComponent);
-  let WrappedElement: JSX.Element;
-
-  beforeEach(() => {
-    WrappedElement = <EnhancedComponent />;
-  });
-
-  it("Should set next/previous correctly", async () => {
-    // Setup
-    const wrapper = mount(WrappedElement);
-
-    // When && Then: Next.
-    const { setNext, setHasNext } = wrapper.find(TestComponent).props();
-    setNext("next");
-    setHasNext(true);
-    wrapper.setProps({});
-    const { next, hasNext } = wrapper.find(TestComponent).props();
-    expect(next).toEqual("next");
-    expect(hasNext).toEqual(hasNext);
-
-    // When && Then: Previous.
-    const { setPrevious, setHasPrevious } = wrapper.find(TestComponent).props();
-    setPrevious("previous");
-    setHasPrevious(true);
-    wrapper.setProps({});
-    const { previous, hasPrevious } = wrapper.find(TestComponent).props();
-    expect(previous).toEqual("previous");
-    expect(hasPrevious).toEqual(true);
-  });
-});
-
 describe("URL paginated data sync", () => {
   const TestComponent = createTestComponent(urlCursorPaginatedDataSync);
   const EnhancedComponent = urlCursorPaginatedDataSync()(TestComponent);
@@ -329,11 +295,15 @@ describe("URL paginated data sync", () => {
   it("Should map data to array", async () => {
     // Setup
     const results = [1, 2, 3];
+    const hasNext = true;
+    const hasPrevious = true;
     const limit = 1000;
     const order = "ascend";
     const sortField = "abc";
 
     when(urlDataSync.get(anything())).thenResolve({
+      hasNext,
+      hasPrevious,
       limit,
       order,
       results,
@@ -352,6 +322,8 @@ describe("URL paginated data sync", () => {
 
     const {
       data,
+      hasNext: resultHasNext,
+      hasPrevious: resultHasPrevious,
       limit: resultLimit,
       order: resultOrder,
       sortField: resultSortField
@@ -359,6 +331,8 @@ describe("URL paginated data sync", () => {
 
     // Then
     expect(data).toEqual(results);
+    expect(resultHasNext).toEqual(hasNext);
+    expect(resultHasPrevious).toEqual(hasPrevious);
     expect(resultLimit).toEqual(limit);
     expect(resultOrder).toEqual(order);
     expect(resultSortField).toEqual(sortField);
@@ -377,12 +351,19 @@ describe("URL paginated data sync", () => {
 
     wrapper.setProps({});
 
-    const { data, limit, order, sortField } = wrapper
-      .find(TestComponent)
-      .props();
+    const {
+      data,
+      hasNext,
+      hasPrevious,
+      limit,
+      order,
+      sortField
+    } = wrapper.find(TestComponent).props();
 
     // Then
     expect(data).toEqual([]);
+    expect(hasNext).toEqual(undefined);
+    expect(hasPrevious).toEqual(undefined);
     expect(limit).toEqual(undefined);
     expect(order).toEqual(undefined);
     expect(sortField).toEqual(undefined);

@@ -130,50 +130,14 @@ export interface CursorPaginatedData<T> {
   readonly hasPrevious?: boolean;
 }
 
-export interface CursorPaginationInProps<T> {
-  readonly next?: string;
-  readonly hasNext?: boolean;
-  readonly previous?: string;
-  readonly hasPrevious?: string;
-  setNext(next?: string): void;
-  setHasNext(hasNext?: boolean): void;
-  setPrevious(previous?: string): void;
-  setHasPrevious(previous?: boolean): void;
-}
-
-/**
- * This works with the auto-sync HOC to provide pagination state (but does not
- * trigger the sync). It is assumed that the server will return the data in the
- * above format - the cursor markers will be stored internally and fed the next
- * time we perform a GET request.
- */
-export function cursorPagination<T, OutProps = {}>(): FunctionalEnhancer<
-  CursorPaginationInProps<T> & OutProps,
-  OutProps
-> {
-  return compose(
-    withStateHandlers(
-      {
-        next: undefined as string | undefined,
-        hasNext: undefined as boolean | undefined,
-        previous: undefined as string | undefined,
-        hasPrevious: undefined as boolean | undefined
-      },
-      {
-        setNext: () => next => ({ next }),
-        setHasNext: () => hasNext => ({ hasNext }),
-        setPrevious: () => previous => ({ previous }),
-        setHasPrevious: () => hasPrevious => ({ hasPrevious })
-      }
-    )
-  );
-}
-
 // ############################### FULL MANAGED ###############################
 
 export interface URLCursorPaginatedDataSyncInProps<T>
   extends StrictOmit<URLDataSyncInProps<readonly T[]>, "data">,
-    Pick<CursorPaginatedData<T>, "limit" | "order" | "sortField"> {
+    Pick<
+      CursorPaginatedData<T>,
+      "hasNext" | "hasPrevious" | "limit" | "order" | "sortField"
+    > {
   readonly data: readonly T[];
   goToNextPage(): void;
   goToPreviousPage(): void;
@@ -205,11 +169,20 @@ export function urlCursorPaginatedDataSync<T>(): FunctionalEnhancer<
       }
     })),
     withProps(({ data }: any) => {
-      const { results, limit, order, sortField } = or<any>(data, {
+      const { hasNext, hasPrevious, limit, order, results, sortField } = or<
+        any
+      >(data, {
         results: []
       });
 
-      return { data: or(results, []), limit, order, sortField };
+      return {
+        data: or(results, []),
+        hasNext,
+        hasPrevious,
+        limit,
+        order,
+        sortField
+      };
     })
   );
 }
