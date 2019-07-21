@@ -1,4 +1,3 @@
-import isEqual from "lodash/isEqual";
 import querystring from "querystring";
 import { toArray } from "../utils";
 
@@ -19,22 +18,15 @@ export function createURLDataSyncRepository(
       client.get(location.pathname, { params: urlParams(additionalQuery) }),
     update: newData =>
       client.patch(location.pathname, newData, { params: urlParams() }),
-    updateURLQuery: async query => {
-      const existingQueryMap = await urlDataSync.getURLQuery();
-
+    updateURLQuery: query => {
       const newQueryMap = Object.entries(query)
         .filter(([, value]) => !!value && !!toArray(value).length)
         .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
 
-      const result = isEqual(existingQueryMap, newQueryMap)
-        ? "unchanged"
-        : "changed";
-
       const merged = querystring.stringify(newQueryMap);
       history.replaceState({}, "", !!merged ? `?${merged}` : "");
-      return result;
     },
-    getURLQuery: async () => {
+    getURLQuery: () => {
       const { search } = location;
       return querystring.parse(search.slice(1));
     }
