@@ -295,7 +295,68 @@ describe("URL paginated data sync", () => {
   it("Should map data to array", async () => {
     // Setup
     const results = [1, 2, 3];
-    when(urlDataSync.get(anything())).thenResolve({ results });
+    const limit = 1000;
+    const order = "ascend";
+    const sortField = "abc";
+
+    when(urlDataSync.get(anything())).thenResolve({
+      limit,
+      order,
+      results,
+      sortField
+    });
+
+    when(urlDataSync.getURLQuery()).thenResolve({});
+
+    // When
+    const wrapper = mount(WrappedElement);
+    const { getData } = wrapper.find(TestComponent).props();
+    getData();
+    await asyncTimeout(1);
+
+    wrapper.setProps({});
+
+    const {
+      data,
+      limit: resultLimit,
+      order: resultOrder,
+      sortField: resultSortField
+    } = wrapper.find(TestComponent).props();
+
+    // Then
+    expect(data).toEqual(results);
+    expect(resultLimit).toEqual(limit);
+    expect(resultOrder).toEqual(order);
+    expect(resultSortField).toEqual(sortField);
+  });
+
+  it("Should give default result array if data is falsy", async () => {
+    // Setup
+    when(urlDataSync.get(anything())).thenResolve(null);
+    when(urlDataSync.getURLQuery()).thenResolve({});
+
+    // When
+    const wrapper = mount(WrappedElement);
+    const { getData } = wrapper.find(TestComponent).props();
+    getData();
+    await asyncTimeout(1);
+
+    wrapper.setProps({});
+
+    const { data, limit, order, sortField } = wrapper
+      .find(TestComponent)
+      .props();
+
+    // Then
+    expect(data).toEqual([]);
+    expect(limit).toEqual(undefined);
+    expect(order).toEqual(undefined);
+    expect(sortField).toEqual(undefined);
+  });
+
+  it("Should give default result array if results are falsy", async () => {
+    // Setup
+    when(urlDataSync.get(anything())).thenResolve({ results: null });
     when(urlDataSync.getURLQuery()).thenResolve({});
 
     // When
@@ -306,9 +367,8 @@ describe("URL paginated data sync", () => {
 
     wrapper.setProps({});
     const { data } = wrapper.find(TestComponent).props();
-    await asyncTimeout(1);
 
     // Then
-    expect(data).toEqual(results);
+    expect(data).toEqual([]);
   });
 });

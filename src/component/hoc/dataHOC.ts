@@ -1,7 +1,6 @@
 import { compose, withHandlers, withProps } from "recompose";
 import withStateHandlers from "recompose/withStateHandlers";
 import { StrictOmit } from "ts-essentials";
-import { toArray } from "../../utils";
 import { lifecycle } from "./betterRecompose";
 
 // ############################ AUTO URL DATA SYNC ############################
@@ -128,6 +127,9 @@ export function urlDataSync<Data, OutProps = {}>() {
 
 export interface CursorPaginatedData<T> {
   readonly results: readonly T[];
+  readonly limit?: number;
+  readonly order?: string;
+  readonly sortField?: Extract<keyof T, string>;
   readonly next?: string;
   readonly previous?: string;
   readonly hasNext?: boolean;
@@ -224,7 +226,8 @@ export interface URLCursorPaginatedDataSyncInProps<T>
     Pick<
       URLCursorPaginatedDataSyncFactory.InProps<T>,
       "goToNextPage" | "goToPreviousPage"
-    > {
+    >,
+    Pick<CursorPaginatedData<T>, "limit" | "order" | "sortField"> {
   readonly data: readonly T[];
 }
 
@@ -241,8 +244,11 @@ export function urlCursorPaginatedDataSync<T>(): FunctionalEnhancer<
 > {
   return compose(
     new URLCursorPaginatedDataSyncFactory().newInstance(),
-    withProps(({ data }: any) => ({
-      data: !!data && !!data.results ? toArray(data.results) : []
-    }))
+    withProps(({ data }: any) => {
+      const { results, limit, order, sortField } =
+        data || ({ results: [] } as any);
+
+      return { data: results || [], limit, order, sortField };
+    })
   );
 }
