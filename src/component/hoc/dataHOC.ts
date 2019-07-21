@@ -21,6 +21,9 @@ export interface URLDataSyncInProps<Data> {
 
   /** Update URL query parameters without reloading and trigger a re-sync. */
   updateURLQuery(query: URLQueryMap): void;
+
+  /** Instead of setting URL query, append to existing URL query. */
+  appendURLQuery(query: URLQueryMap): void;
 }
 
 export interface URLDataSyncOutProps<Data> {
@@ -65,6 +68,16 @@ export function urlDataSync<Data, OutProps = {}>(): FunctionalEnhancer<
     return callAPI(props, () => urlDataSync.get(additionalQuery), setData);
   }
 
+  async function updateURLQuery(props: any, query: URLQueryMap) {
+    const { urlDataSync, setURLQuery } = props;
+
+    (await urlDataSync.updateURLQuery(query)) === "changed" &&
+      (await (async () => {
+        setURLQuery(query);
+        await getData(props);
+      })());
+  }
+
   return compose(
     withStateHandlers(
       () => ({
@@ -76,13 +89,13 @@ export function urlDataSync<Data, OutProps = {}>(): FunctionalEnhancer<
       {
         setData: () => data => ({ data }),
         setDataError: () => dataError => ({ dataError }),
-        setIsLoadingData: () => isLoadingData => ({
-          isLoadingData
-        }),
+        setIsLoadingData: () => isLoadingData => ({ isLoadingData }),
         setURLQuery: () => urlQuery => ({ urlQuery })
       }
     ),
     withProps((props: any) => ({
+      appendURLQuery: (query: URLQueryMap) =>
+        updateURLQuery(props, { ...props.urlQuery, ...query }),
       getData: () => getData(props),
       saveData: () => {
         const { data, urlDataSync, setData } = props;
@@ -92,15 +105,7 @@ export function urlDataSync<Data, OutProps = {}>(): FunctionalEnhancer<
         const { data, setData } = props;
         setData(Object.assign({}, data, newData));
       },
-      updateURLQuery: async (query: URLQueryMap) => {
-        const { urlDataSync, setURLQuery } = props;
-
-        (await urlDataSync.updateURLQuery(query)) === "changed" &&
-          (await (async () => {
-            setURLQuery(query);
-            await getData(props);
-          })());
-      }
+      updateURLQuery: (query: URLQueryMap) => updateURLQuery(props, query)
     })),
     lifecycle({
       async componentDidMount() {
@@ -189,14 +194,14 @@ export function urlCursorPaginatedDataSync<T>(): FunctionalEnhancer<
     urlDataSync(),
     withProps((props: any) => ({
       goToNextPage: () => {
-        const { data, urlQuery, updateURLQuery } = props;
+        const { data, appendURLQuery } = props;
         const { next } = or(data, { next: undefined });
-        updateURLQuery({ ...urlQuery, next, previous: undefined });
+        appendURLQuery({ next, previous: undefined });
       },
       goToPreviousPage: () => {
-        const { data, urlQuery, updateURLQuery } = props;
+        const { data, appendURLQuery } = props;
         const { previous } = or(data, { previous: undefined });
-        updateURLQuery({ ...urlQuery, next: undefined, previous });
+        appendURLQuery({ next: undefined, previous });
       }
     })),
     withProps(({ data }: any) => {

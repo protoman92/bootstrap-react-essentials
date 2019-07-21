@@ -123,6 +123,30 @@ describe("Auto URL data sync", () => {
     expect(urlQuery).toEqual(query);
   });
 
+  it("Should append URL queries correctly", async () => {
+    // Setup
+    const oldQuery = { a: "1", b: "2", c: "3" };
+    const newQuery = { a: "2", b: "3" };
+    when(urlDataSync.get(anything())).thenResolve({});
+    when(urlDataSync.getURLQuery()).thenResolve(oldQuery);
+    when(urlDataSync.updateURLQuery(anything())).thenResolve("changed");
+
+    // When
+    const wrapper = mount(WrappedElement);
+    await asyncTimeout(1);
+
+    wrapper.setProps({});
+    const { appendURLQuery } = wrapper.find(TestComponent).props();
+    appendURLQuery(newQuery);
+    await asyncTimeout(1);
+
+    wrapper.setProps({});
+    const { urlQuery } = wrapper.find(TestComponent).props();
+
+    // Then
+    expect(urlQuery).toEqual({ ...oldQuery, ...newQuery });
+  });
+
   it("Should not get data if urlQuery does not change", async () => {
     // Setup
     when(urlDataSync.get(anything())).thenResolve({});
