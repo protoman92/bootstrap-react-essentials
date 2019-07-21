@@ -3,6 +3,10 @@ import withStateHandlers from "recompose/withStateHandlers";
 import { StrictOmit } from "ts-essentials";
 import { lifecycle } from "./betterRecompose";
 
+function or<T>(value1: T | undefined, value2: T) {
+  return value1 !== undefined && value1 !== null ? value1 : value2;
+}
+
 // ############################ AUTO URL DATA SYNC ############################
 
 export interface URLDataSyncInProps<Data> {
@@ -23,12 +27,22 @@ export interface URLDataSyncOutProps<Data> {
   readonly urlDataSync: Repository.URLDataSync;
 }
 
-class URLDataSyncFactory<
-  Data,
-  I extends URLDataSyncInProps<Data> = URLDataSyncInProps<Data>,
-  O extends URLDataSyncOutProps<Data> = URLDataSyncOutProps<Data>
+/**
+ * Automatically sync with current URL by requesting data from server using
+ * said URL. This is assuming there is data provided by the server at current
+ * URL, e.g. user navigates to /users/1, this will send a GET request to
+ * /users/1, which should have a defined backend route that contains the
+ * relevant data.
+ *
+ * This HOC is usually used for components rendered by a Route. Please make sure
+ * when implementing the backend to handle these requests that it never returns
+ * null/undefined (as per REST design standards).
+ */
+export function urlDataSync<Data, OutProps = {}>(): FunctionalEnhancer<
+  URLDataSyncInProps<Data> & OutProps,
+  URLDataSyncOutProps<Data> & OutProps
 > {
-  private async callAPI<T>(
+  async function callAPI<T>(
     { setDataError, setIsLoadingData }: any,
     callFn: () => Promise<T>,
     successFn: (res: T) => void
@@ -46,81 +60,56 @@ class URLDataSyncFactory<
     }
   }
 
-  getData(props: any, additionalQuery?: URLQueryMap) {
+  function getData(props: any, additionalQuery?: URLQueryMap) {
     const { urlDataSync, setData } = props;
-
-    return this.callAPI(
-      props,
-      () => urlDataSync.get(additionalQuery),
-      (data: Data) => {
-        this.onDataChanged(props, data);
-        setData(data);
-      }
-    );
+    return callAPI(props, () => urlDataSync.get(additionalQuery), setData);
   }
 
-  onDataChanged(props: any, data: Data) {}
-
-  newInstance<OutProps>(): FunctionalEnhancer<I & OutProps, O & OutProps> {
-    return compose(
-      withStateHandlers(
-        () => ({
-          data: undefined as Data | undefined,
-          dataError: undefined as Error | undefined,
-          isLoadingData: false,
-          urlQuery: {} as URLQueryMap
+  return compose(
+    withStateHandlers(
+      () => ({
+        data: undefined as Data | undefined,
+        dataError: undefined as Error | undefined,
+        isLoadingData: false,
+        urlQuery: {} as URLQueryMap
+      }),
+      {
+        setData: () => data => ({ data }),
+        setDataError: () => dataError => ({ dataError }),
+        setIsLoadingData: () => isLoadingData => ({
+          isLoadingData
         }),
-        {
-          setData: () => data => ({ data }),
-          setDataError: () => dataError => ({ dataError }),
-          setIsLoadingData: () => isLoadingData => ({ isLoadingData }),
-          setURLQuery: () => urlQuery => ({ urlQuery })
-        }
-      ),
-      withProps((props: any) => ({
-        getData: () => this.getData(props),
-        saveData: () => {
-          const { data, urlDataSync, setData } = props;
-          this.callAPI(props, () => urlDataSync.update(data), setData);
-        },
-        updateData: (newData: Partial<Data>) => {
-          const { data, setData } = props;
-          setData(Object.assign({}, data, newData));
-        },
-        updateURLQuery: async (query: URLQueryMap) => {
-          const { urlDataSync, setURLQuery } = props;
+        setURLQuery: () => urlQuery => ({ urlQuery })
+      }
+    ),
+    withProps((props: any) => ({
+      getData: () => getData(props),
+      saveData: () => {
+        const { data, urlDataSync, setData } = props;
+        callAPI(props, () => urlDataSync.update(data), setData);
+      },
+      updateData: (newData: Partial<Data>) => {
+        const { data, setData } = props;
+        setData(Object.assign({}, data, newData));
+      },
+      updateURLQuery: async (query: URLQueryMap) => {
+        const { urlDataSync, setURLQuery } = props;
 
-          (await urlDataSync.updateURLQuery(query)) === "changed" &&
-            (await (async () => {
-              setURLQuery(query);
-              await this.getData(props);
-            })());
-        }
-      })),
-      lifecycle({
-        async componentDidMount() {
-          const { urlDataSync, setURLQuery } = this.props as any;
-          const query = await urlDataSync.getURLQuery();
-          setURLQuery(query);
-        }
-      })
-    );
-  }
-}
-
-/**
- * Automatically sync with current URL by requesting data from server using
- * said URL. This is assuming there is data provided by the server at current
- * URL, e.g. user navigates to /users/1, this will send a GET request to
- * /users/1, which should have a defined backend route that contains the
- * relevant data.
- *
- * This HOC is usually used for components rendered by a Route. Please make sure
- * when implementing the backend to handle these requests that it never returns
- * null/undefined (as per REST design standards).
- */
-export function urlDataSync<Data, OutProps = {}>() {
-  return new URLDataSyncFactory<Data>().newInstance<OutProps>();
+        (await urlDataSync.updateURLQuery(query)) === "changed" &&
+          (await (async () => {
+            setURLQuery(query);
+            await getData(props);
+          })());
+      }
+    })),
+    lifecycle({
+      async componentDidMount() {
+        const { urlDataSync, setURLQuery } = this.props as any;
+        const query = await urlDataSync.getURLQuery();
+        setURLQuery(query);
+      }
+    })
+  );
 }
 
 // ############################# CURSOR PAGINATION #############################
@@ -177,62 +166,16 @@ export function cursorPagination<T, OutProps = {}>(): FunctionalEnhancer<
 
 // ############################### FULL MANAGED ###############################
 
-declare namespace URLCursorPaginatedDataSyncFactory {
-  export interface InProps<T>
-    extends URLDataSyncInProps<CursorPaginatedData<T>> {
-    goToNextPage(): void;
-    goToPreviousPage(): void;
-  }
-
-  export interface OutProps<T>
-    extends URLDataSyncOutProps<CursorPaginatedData<T>> {}
-}
-
-class URLCursorPaginatedDataSyncFactory<T> extends URLDataSyncFactory<
-  CursorPaginatedData<T>,
-  URLCursorPaginatedDataSyncFactory.InProps<T>,
-  URLCursorPaginatedDataSyncFactory.OutProps<T>
-> {
-  onDataChanged(props: any, data: CursorPaginatedData<T>) {
-    const { setNext, setHasNext, setPrevious, setHasPrevious } = props;
-    const { next, hasNext, previous, hasPrevious } = data;
-    setNext(next);
-    setHasNext(hasNext);
-    setPrevious(previous);
-    setHasPrevious(hasPrevious);
-    super.onDataChanged(props, data);
-  }
-
-  newInstance() {
-    return compose<any, any>(
-      cursorPagination(),
-      super.newInstance(),
-      withProps((props: any) => ({
-        goToNextPage: () => {
-          const { next } = props;
-          this.getData(props, { next: next, previous: undefined });
-        },
-        goToPreviousPage: () => {
-          const { previous } = props;
-          this.getData(props, { previous: previous, next: undefined });
-        }
-      }))
-    );
-  }
-}
-
 export interface URLCursorPaginatedDataSyncInProps<T>
   extends StrictOmit<URLDataSyncInProps<readonly T[]>, "data">,
-    Pick<
-      URLCursorPaginatedDataSyncFactory.InProps<T>,
-      "goToNextPage" | "goToPreviousPage"
-    >,
     Pick<CursorPaginatedData<T>, "limit" | "order" | "sortField"> {
   readonly data: readonly T[];
+  goToNextPage(): void;
+  goToPreviousPage(): void;
 }
 
 export interface URLCursorPaginatedDataSyncOutProps<T>
-  extends Pick<URLCursorPaginatedDataSyncFactory.OutProps<T>, "urlDataSync"> {}
+  extends Pick<URLDataSyncOutProps<CursorPaginatedData<T>>, "urlDataSync"> {}
 
 /**
  * This HOC automatically manages pagination data sync, and is best used to
@@ -242,13 +185,26 @@ export function urlCursorPaginatedDataSync<T>(): FunctionalEnhancer<
   URLCursorPaginatedDataSyncInProps<T>,
   URLCursorPaginatedDataSyncOutProps<T>
 > {
-  return compose(
-    new URLCursorPaginatedDataSyncFactory().newInstance(),
+  return compose<any, any>(
+    urlDataSync(),
+    withProps((props: any) => ({
+      goToNextPage: () => {
+        const { data, urlQuery, updateURLQuery } = props;
+        const { next } = or(data, { next: undefined });
+        updateURLQuery({ ...urlQuery, next, previous: undefined });
+      },
+      goToPreviousPage: () => {
+        const { data, urlQuery, updateURLQuery } = props;
+        const { previous } = or(data, { previous: undefined });
+        updateURLQuery({ ...urlQuery, next: undefined, previous });
+      }
+    })),
     withProps(({ data }: any) => {
-      const { results, limit, order, sortField } =
-        data || ({ results: [] } as any);
+      const { results, limit, order, sortField } = or<any>(data, {
+        results: []
+      });
 
-      return { data: results || [], limit, order, sortField };
+      return { data: or(results, []), limit, order, sortField };
     })
   );
 }

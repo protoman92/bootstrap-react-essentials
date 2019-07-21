@@ -240,13 +240,16 @@ describe("URL paginated data sync", () => {
 
   it("Should go to next page correctly", async () => {
     // Setup
+    const urlQuery = { a: "1", b: "2", c: "3" };
+
     when(urlDataSync.get(anything())).thenResolve({
       results: [],
       next: "next",
       previous: "previous"
     });
 
-    when(urlDataSync.getURLQuery()).thenResolve({});
+    when(urlDataSync.getURLQuery()).thenResolve(urlQuery);
+    when(urlDataSync.updateURLQuery(anything())).thenResolve("changed");
 
     // When
     const wrapper = mount(WrappedElement);
@@ -261,19 +264,24 @@ describe("URL paginated data sync", () => {
 
     // Then
     verify(
-      urlDataSync.get(deepEqual({ next: "next", previous: undefined }))
+      urlDataSync.updateURLQuery(
+        deepEqual({ ...urlQuery, next: "next", previous: undefined })
+      )
     ).once();
   });
 
   it("Should go to previous page correctly", async () => {
     // Setup
+    const urlQuery = { a: "1", b: "2", c: "3" };
+
     when(urlDataSync.get(anything())).thenResolve({
       results: [],
       next: "next",
       previous: "previous"
     });
 
-    when(urlDataSync.getURLQuery()).thenResolve({});
+    when(urlDataSync.getURLQuery()).thenResolve(urlQuery);
+    when(urlDataSync.updateURLQuery(anything())).thenResolve("changed");
 
     // When
     const wrapper = mount(WrappedElement);
@@ -288,7 +296,9 @@ describe("URL paginated data sync", () => {
 
     // Then
     verify(
-      urlDataSync.get(deepEqual({ previous: "previous", next: undefined }))
+      urlDataSync.updateURLQuery(
+        deepEqual({ ...urlQuery, next: undefined, previous: "previous" })
+      )
     ).once();
   });
 
