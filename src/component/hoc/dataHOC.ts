@@ -1,4 +1,4 @@
-import { compose, withHandlers, withProps } from "recompose";
+import { compose, withProps } from "recompose";
 import withStateHandlers from "recompose/withStateHandlers";
 import { StrictOmit } from "ts-essentials";
 import { lifecycle } from "./betterRecompose";
@@ -77,17 +77,17 @@ class URLDataSyncFactory<
           setURLQuery: () => urlQuery => ({ urlQuery })
         }
       ),
-      withHandlers({
-        getData: props => () => this.getData(props),
-        saveData: (props: any) => () => {
+      withProps((props: any) => ({
+        getData: () => this.getData(props),
+        saveData: () => {
           const { data, urlDataSync, setData } = props;
           this.callAPI(props, () => urlDataSync.update(data), setData);
         },
-        updateData: (props: any) => (newData: Partial<Data>) => {
+        updateData: (newData: Partial<Data>) => {
           const { data, setData } = props;
           setData(Object.assign({}, data, newData));
         },
-        updateURLQuery: (props: any) => async (query: URLQueryMap) => {
+        updateURLQuery: async (query: URLQueryMap) => {
           const { urlDataSync, setURLQuery } = props;
 
           (await urlDataSync.updateURLQuery(query)) === "changed" &&
@@ -96,7 +96,7 @@ class URLDataSyncFactory<
               await this.getData(props);
             })());
         }
-      }),
+      })),
       lifecycle({
         async componentDidMount() {
           const { urlDataSync, setURLQuery } = this.props as any;
@@ -207,16 +207,16 @@ class URLCursorPaginatedDataSyncFactory<T> extends URLDataSyncFactory<
     return compose<any, any>(
       cursorPagination(),
       super.newInstance(),
-      withHandlers({
-        goToNextPage: (props: any) => () => {
+      withProps((props: any) => ({
+        goToNextPage: () => {
           const { next } = props;
           this.getData(props, { next: next, previous: undefined });
         },
-        goToPreviousPage: (props: any) => () => {
+        goToPreviousPage: () => {
           const { previous } = props;
           this.getData(props, { previous: previous, next: undefined });
         }
-      })
+      }))
     );
   }
 }
