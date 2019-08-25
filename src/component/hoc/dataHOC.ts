@@ -1,4 +1,9 @@
-import { compose, withProps } from "recompose";
+import {
+  compose,
+  lifecycle,
+  ReactLifeCycleFunctions,
+  withProps
+} from "recompose";
 import withStateHandlers from "recompose/withStateHandlers";
 import { StrictOmit } from "ts-essentials";
 import defaultRepository from "../../repository/dataRepository";
@@ -20,7 +25,7 @@ export interface URLDataSyncInProps<Data> {
   getURLQuery(): URLQueryMap;
 
   /** Update URL query parameters without reloading and trigger a re-sync. */
-  updateURLQuery(query: URLQueryMap): void;
+  replaceURLQuery(query: URLQueryMap): void;
 
   /** Instead of setting URL query, append to existing URL query. */
   appendURLQuery(query: URLQueryMap): void;
@@ -68,9 +73,8 @@ export function urlDataSyncHOC<Data, OutProps = {}>(
     return callAPI(props, () => syncRepository.get(additionalQuery), setData);
   }
 
-  async function updateURLQuery(props: any, query: URLQueryMap) {
-    await syncRepository.updateURLQuery(query);
-    await getData(props);
+  async function replaceURLQuery(query: URLQueryMap) {
+    await syncRepository.replaceURLQuery(query);
   }
 
   return compose(
@@ -87,7 +91,13 @@ export function urlDataSyncHOC<Data, OutProps = {}>(
       }
     ),
     withProps((props: any) => ({
+      appendURLQuery: async (query: URLQueryMap) => {
+        const urlQuery = await syncRepository.getURLQuery();
+        replaceURLQuery({ ...urlQuery, ...query });
+      },
       getData: () => getData(props),
+      getURLQuery: () => syncRepository.getURLQuery(),
+      replaceURLQuery: (query: URLQueryMap) => replaceURLQuery(query),
       saveData: () => {
         const { data, setData } = props;
         callAPI(props, () => syncRepository.update(data), setData);
@@ -95,14 +105,33 @@ export function urlDataSyncHOC<Data, OutProps = {}>(
       updateData: (newData: Partial<Data>) => {
         const { data, setData } = props;
         setData(Object.assign({}, data, newData));
-      },
-      appendURLQuery: async (query: URLQueryMap) => {
-        const urlQuery = await syncRepository.getURLQuery();
-        updateURLQuery(props, { ...urlQuery, ...query });
-      },
-      updateURLQuery: (query: URLQueryMap) => updateURLQuery(props, query),
-      getURLQuery: () => syncRepository.getURLQuery()
-    }))
+      }
+    })),
+    lifecycle(
+      ((): ReactLifeCycleFunctions<any, any> => {
+        let urlStateSubscription: Subscription | undefined = undefined;
+
+        return {
+          componentDidMount() {
+            const { getData } = this.props;
+
+            urlStateSubscription = syncRepository.onURLStateChanges(event => {
+              switch (event) {
+                case "replaceState":
+                  getData();
+                  break;
+
+                default:
+                  break;
+              }
+            });
+          },
+          componentWillUnmount() {
+            !!urlStateSubscription && urlStateSubscription.unsubscribe();
+          }
+        };
+      })()
+    )
   );
 }
 

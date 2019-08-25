@@ -20,7 +20,7 @@ export function toArray<T>(value: T | readonly T[]): readonly T[] {
   return value instanceof Array ? value : [value];
 }
 
-export function updateURLQuery(
+export function replaceURLQuery(
   { history }: Pick<Window, "history">,
   query: URLQueryMap
 ) {

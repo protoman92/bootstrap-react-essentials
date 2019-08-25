@@ -15,13 +15,13 @@ export function createWorkarounds(): Workarounds {
       const replaceState = history.replaceState;
 
       history.pushState = function(...args) {
+        pushState.bind(history, ...args);
         Object.values(pushCBs).forEach(fn => fn("pushState", ...args));
-        return pushState.bind(history, ...args);
       };
 
       history.replaceState = function(...args) {
+        replaceState.bind(history, ...args);
         Object.values(replaceCBs).forEach(fn => fn("replaceState", ...args));
-        return replaceState.bind(history, ...args);
       };
 
       window.history.onStateChange = function(fn) {

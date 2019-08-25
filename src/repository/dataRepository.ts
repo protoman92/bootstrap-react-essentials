@@ -1,6 +1,6 @@
 import querystring from "querystring";
 import httpClient from "../http/relativeHTTPClient";
-import { getURLQuery, updateURLQuery } from "../utils";
+import { getURLQuery, replaceURLQuery } from "../utils";
 
 /** This repository allows synchronization of data with current URL. */
 export function createURLDataSyncRepository(
@@ -20,14 +20,15 @@ export function createURLDataSyncRepository(
         method: "get",
         params: urlParams(additionalQuery)
       }),
+    getURLQuery: () => getURLQuery({ location }),
+    onURLStateChanges: (...args) => history.onStateChange(...args),
     update: data =>
       client.fetch(location.pathname, {
         data,
         method: "patch",
         params: urlParams()
       }),
-    updateURLQuery: query => updateURLQuery({ history }, query),
-    getURLQuery: () => getURLQuery({ location })
+    replaceURLQuery: query => replaceURLQuery({ history }, query)
   };
 
   return urlDataSync;

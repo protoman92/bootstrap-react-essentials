@@ -56,12 +56,13 @@ declare global {
 
   namespace Repository {
     interface URLDataSync {
+      readonly onURLStateChanges: Window["history"]["onStateChange"];
       get<T>(additionalQuery?: URLQueryMap): Promise<T>;
+      getURLQuery(): URLQueryMap;
       update<T>(newData: T): Promise<T>;
 
       /** Update URL query without reloading the page. */
-      updateURLQuery(query: URLQueryMap): void;
-      getURLQuery(): URLQueryMap;
+      replaceURLQuery(query: URLQueryMap): void;
     }
   }
 

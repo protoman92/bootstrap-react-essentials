@@ -1,6 +1,6 @@
 import querystring from "querystring";
 import { deepEqual, instance, spy, verify } from "ts-mockito";
-import { getURLQuery, mergeQueryMaps, toArray, updateURLQuery } from "./utils";
+import { getURLQuery, mergeQueryMaps, toArray, replaceURLQuery } from "./utils";
 
 describe("Utilities", () => {
   it("Should get URL query correctly", async () => {
@@ -42,9 +42,9 @@ describe("Utilities", () => {
     const window = { history: instance(history) };
 
     // When
-    updateURLQuery(window, { a: "1", b: ["2", "3"] });
-    updateURLQuery(window, { a: Array(0), b: Array(0), c: "10" });
-    updateURLQuery(window, {});
+    replaceURLQuery(window, { a: "1", b: ["2", "3"] });
+    replaceURLQuery(window, { a: Array(0), b: Array(0), c: "10" });
+    replaceURLQuery(window, {});
 
     // Then
     verify(history.replaceState(deepEqual({}), "?a=1&b=2&b=3"));
