@@ -1,6 +1,7 @@
 import { compose, withProps } from "recompose";
 import withStateHandlers from "recompose/withStateHandlers";
 import { StrictOmit } from "ts-essentials";
+import defaultRepository from "../../repository/dataRepository";
 
 function or<T>(value1: T | undefined, value2: T) {
   return value1 !== undefined && value1 !== null ? value1 : value2;
@@ -25,9 +26,7 @@ export interface URLDataSyncInProps<Data> {
   appendURLQuery(query: URLQueryMap): void;
 }
 
-export interface URLDataSyncOutProps<Data> {
-  readonly urlDataSync: Repository.URLDataSync;
-}
+export interface URLDataSyncOutProps<Data> {}
 
 /**
  * Automatically sync with current URL by requesting data from server using
@@ -40,7 +39,9 @@ export interface URLDataSyncOutProps<Data> {
  * when implementing the backend to handle these requests that it never returns
  * null/undefined (as per REST design standards).
  */
-export function urlDataSync<Data, OutProps = {}>(): FunctionalEnhancer<
+export function urlDataSyncHOC<Data, OutProps = {}>(
+  syncRepository: typeof defaultRepository = defaultRepository
+): FunctionalEnhancer<
   URLDataSyncInProps<Data> & OutProps,
   URLDataSyncOutProps<Data> & OutProps
 > {
@@ -63,13 +64,12 @@ export function urlDataSync<Data, OutProps = {}>(): FunctionalEnhancer<
   }
 
   function getData(props: any, additionalQuery?: URLQueryMap) {
-    const { urlDataSync, setData } = props;
-    return callAPI(props, () => urlDataSync.get(additionalQuery), setData);
+    const { setData } = props;
+    return callAPI(props, () => syncRepository.get(additionalQuery), setData);
   }
 
   async function updateURLQuery(props: any, query: URLQueryMap) {
-    const { urlDataSync } = props;
-    await urlDataSync.updateURLQuery(query);
+    await syncRepository.updateURLQuery(query);
     await getData(props);
   }
 
@@ -89,20 +89,19 @@ export function urlDataSync<Data, OutProps = {}>(): FunctionalEnhancer<
     withProps((props: any) => ({
       getData: () => getData(props),
       saveData: () => {
-        const { data, urlDataSync, setData } = props;
-        callAPI(props, () => urlDataSync.update(data), setData);
+        const { data, setData } = props;
+        callAPI(props, () => syncRepository.update(data), setData);
       },
       updateData: (newData: Partial<Data>) => {
         const { data, setData } = props;
         setData(Object.assign({}, data, newData));
       },
       appendURLQuery: async (query: URLQueryMap) => {
-        const { urlDataSync } = props;
-        const urlQuery = await urlDataSync.getURLQuery();
+        const urlQuery = await syncRepository.getURLQuery();
         updateURLQuery(props, { ...urlQuery, ...query });
       },
       updateURLQuery: (query: URLQueryMap) => updateURLQuery(props, query),
-      getURLQuery: () => props.urlDataSync.getURLQuery()
+      getURLQuery: () => syncRepository.getURLQuery()
     }))
   );
 }
@@ -122,7 +121,7 @@ export interface CursorPaginatedData<T> {
 
 // ############################### FULL MANAGED ###############################
 
-export interface URLCursorPaginatedDataSyncInProps<T>
+export interface URLCursorPaginatedSyncInProps<T>
   extends StrictOmit<URLDataSyncInProps<readonly T[]>, "data">,
     Pick<
       CursorPaginatedData<T>,
@@ -133,19 +132,21 @@ export interface URLCursorPaginatedDataSyncInProps<T>
   goToPreviousPage(): void;
 }
 
-export interface URLCursorPaginatedDataSyncOutProps<T>
-  extends Pick<URLDataSyncOutProps<CursorPaginatedData<T>>, "urlDataSync"> {}
+export interface URLCursorPaginatedSyncOutProps<T>
+  extends URLDataSyncOutProps<CursorPaginatedData<T>> {}
 
 /**
  * This HOC automatically manages pagination data sync, and is best used to
  * display table data. For other kinds of data use the data sync HOC.
  */
-export function urlCursorPaginatedDataSync<T>(): FunctionalEnhancer<
-  URLCursorPaginatedDataSyncInProps<T>,
-  URLCursorPaginatedDataSyncOutProps<T>
+export function urlCursorPaginatedSyncHOC<T>(
+  syncRepository: typeof defaultRepository = /* istanbul ignore next */ defaultRepository
+): FunctionalEnhancer<
+  URLCursorPaginatedSyncInProps<T>,
+  URLCursorPaginatedSyncOutProps<T>
 > {
   return compose<any, any>(
-    urlDataSync(),
+    urlDataSyncHOC(syncRepository),
     withProps((props: any) => ({
       goToNextPage: () => {
         const { data, appendURLQuery } = props;
@@ -160,11 +161,11 @@ export function urlCursorPaginatedDataSync<T>(): FunctionalEnhancer<
     })),
     withProps(({ data }: any) => {
       const { hasNext, hasPrevious, limit, order, results, sortField } = or<
-        any
+        CursorPaginatedData<T>
       >(data, { results: [] });
 
       return {
-        data: or(results, []),
+        data: or<readonly T[]>(results, []),
         hasNext,
         hasPrevious,
         limit,
