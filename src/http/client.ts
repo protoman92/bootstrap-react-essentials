@@ -1,32 +1,9 @@
 import axios from "axios";
 
-export function createBaseClient(
-  client: Pick<
-    typeof axios,
-    "get" | "post" | "patch" | "delete" | "head"
-  > = axios
-): HTTPClient {
-  const baseHeaders = { "Content-Type": "application/json" };
-
-  function createConfig(config?: HTTPClient.Config): HTTPClient.Config {
-    return {
-      ...config,
-      headers: { ...baseHeaders, ...(!!config ? config.headers : {}) }
-    };
-  }
-
+/* istanbul ignore next */
+export function createHTTPClient(client: typeof axios = axios): HTTPClient {
   return {
-    get: (url, config) =>
-      client.get(url, createConfig(config)).then(({ data }) => data),
-    post: (url, body, config) =>
-      client.post(url, body, createConfig(config)).then(({ data }) => data),
-    patch: (url, body, config) =>
-      client.patch(url, body, createConfig(config)).then(({ data }) => data),
-    delete: (url, body, config) =>
-      client
-        .delete(url, createConfig({ ...config, data: body }))
-        .then(({ data }) => data),
-    head: (url, config) => client.head(url, createConfig(config))
+    call: (url, config) => client(url, config).then(({ data }) => data)
   };
 }
 
@@ -40,20 +17,19 @@ export function createBaseClient(
  * client -> https://localhost:8000/users/
  * server -> https://api.localhost:8000/users/1
  */
-export function createRelativeClient(
+export function createRelativeHTTPClient(
   { location }: Pick<Window, "location">,
   client: HTTPClient
-): RelativeHTTPClient {
+): HTTPClient {
   function getFullURL(url: string): string {
     const { origin } = location;
     return `${origin}/api${url}`;
   }
 
   return {
-    get: (url, config) => client.get(getFullURL(url), config),
-    post: (url, body, config) => client.post(getFullURL(url), body, config),
-    patch: (url, body, config) => client.patch(getFullURL(url), body, config),
-    delete: (url, body, config) => client.delete(getFullURL(url), body, config),
-    head: (url, config) => client.head(getFullURL(url), config)
+    call: (url, config) => {
+      const fullURL = getFullURL(url);
+      return client.call(fullURL, config);
+    }
   };
 }

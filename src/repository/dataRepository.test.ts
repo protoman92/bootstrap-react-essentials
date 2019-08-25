@@ -24,63 +24,53 @@ describe("URL sync repository", () => {
   };
 
   let history: History;
-  let client: RelativeHTTPClient;
+  let client: HTTPClient;
   let urlDataSync: Repository.URLDataSync;
 
   beforeEach(() => {
-    try {
-      client = spy<RelativeHTTPClient>({
-        get: () => Promise.reject(""),
-        post: () => Promise.reject(""),
-        patch: () => Promise.reject(""),
-        delete: () => Promise.reject(""),
-        head: () => Promise.reject("")
-      });
+    client = spy<HTTPClient>({ call: () => Promise.reject("") });
 
-      history = spy<History>({
-        length: 0,
-        scrollRestoration: "auto",
-        state: {},
-        back: () => {},
-        forward: () => {},
-        go: () => {},
-        pushState: () => {},
-        replaceState: () => {}
-      });
+    history = spy<History>({
+      length: 0,
+      scrollRestoration: "auto",
+      state: {},
+      back: () => {},
+      forward: () => {},
+      go: () => {},
+      pushState: () => {},
+      replaceState: () => {}
+    });
 
-      urlDataSync = createURLDataSyncRepository(
-        { history: instance(history), location },
-        instance(client)
-      );
-    } catch (e) {
-      console.log(e);
-    }
+    urlDataSync = createURLDataSyncRepository(
+      { history: instance(history), location },
+      instance(client)
+    );
   });
 
   it("Should get data correctly", async () => {
     // Setup
     const data = { a: 0, b: 1, c: 2 };
-    when(client.get(pathname, anything())).thenResolve(data);
+    when(client.call(pathname, anything())).thenResolve(data);
 
     // When
     const result = await urlDataSync.get();
 
     // Then
-    verify(client.get(pathname, deepEqual({ params }))).once();
+    verify(client.call(pathname, deepEqual({ method: "get", params }))).once();
     expect(result).toEqual(data);
   });
 
   it("Should update data correctly", async () => {
     // Setup
     const data = { a: 0, b: 1, c: 2 };
-    when(client.patch(pathname, anything(), anything())).thenResolve(data);
+    when(client.call(pathname, anything())).thenResolve(data);
 
     // When
     const result = await urlDataSync.update(data);
 
     // Then
     verify(
-      client.patch(pathname, deepEqual(data), deepEqual({ params }))
+      client.call(pathname, deepEqual({ data, method: "patch", params }))
     ).once();
 
     expect(result).toEqual(data);
@@ -88,13 +78,15 @@ describe("URL sync repository", () => {
 
   it("Should add on additional query correctly", async () => {
     // Setup
-    when(client.get(anything(), anything())).thenResolve({});
+    when(client.call(anything(), anything())).thenResolve({});
     const query = { a: "1", b: "2" };
 
     // When
     await urlDataSync.get(query);
 
     // Then
-    verify(client.get(anything(), deepEqual({ params: query }))).once();
+    verify(
+      client.call(anything(), deepEqual({ method: "get", params: query }))
+    ).once();
   });
 });

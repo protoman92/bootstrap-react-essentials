@@ -1,44 +1,5 @@
 import { deepEqual, instance, spy, verify } from "ts-mockito";
-import { createBaseClient, createRelativeClient } from "./client";
-
-describe("HTTP client", () => {
-  let client: NonNullable<Parameters<typeof createBaseClient>[0]>;
-  let httpClient: HTTPClient;
-
-  beforeEach(() => {
-    client = spy<typeof client>({
-      get: () => Promise.resolve({} as any),
-      post: () => Promise.resolve({} as any),
-      patch: () => Promise.resolve({} as any),
-      delete: () => Promise.resolve({} as any),
-      head: () => Promise.resolve({} as any)
-    });
-
-    httpClient = createBaseClient(instance(client));
-  });
-
-  it("Verb operations should work", async () => {
-    // Setup
-    const params = {
-      a: 1,
-      b: 2
-    };
-
-    // When
-    await httpClient.get("", { params });
-    await httpClient.post("", {}, { params });
-    await httpClient.patch("", {}, { params });
-    await httpClient.delete("", { d: 3, e: 4 }, { params });
-    await httpClient.head("", { params });
-
-    // Then
-    verify(client.get("", deepEqual({ params })));
-    verify(client.post("", deepEqual({}), deepEqual({ params })));
-    verify(client.patch("", deepEqual({}), deepEqual({ params })));
-    verify(client.delete("", deepEqual({ data: { d: 3, e: 4 }, params })));
-    verify(client.head("", deepEqual({ params })));
-  });
-});
+import { createRelativeHTTPClient } from "./client";
 
 describe("Relative HTTP client", () => {
   const origin = "https://example.com";
@@ -61,18 +22,14 @@ describe("Relative HTTP client", () => {
   };
 
   let httpClient: HTTPClient;
-  let relativeClient: RelativeHTTPClient;
+  let relativeClient: HTTPClient;
 
   beforeEach(() => {
-    httpClient = spy<HTTPClient>({
-      get: () => Promise.resolve({} as any),
-      post: () => Promise.resolve({} as any),
-      patch: () => Promise.resolve({} as any),
-      delete: () => Promise.resolve({} as any),
-      head: () => Promise.resolve({} as any)
-    });
-
-    relativeClient = createRelativeClient({ location }, instance(httpClient));
+    httpClient = spy<HTTPClient>({ call: () => Promise.resolve({} as any) });
+    relativeClient = createRelativeHTTPClient(
+      { location },
+      instance(httpClient)
+    );
   });
 
   it("Verb operations should work", async () => {
@@ -80,17 +37,17 @@ describe("Relative HTTP client", () => {
     const apiOrigin = "https://example.com/api";
 
     // When
-    await relativeClient.get("");
-    await relativeClient.post("", {});
-    await relativeClient.patch("", {});
-    await relativeClient.delete("", {});
-    await relativeClient.head("");
+    await relativeClient.call("", { method: "get" });
+    await relativeClient.call("", { method: "post" });
+    await relativeClient.call("", { method: "patch" });
+    await relativeClient.call("", { method: "delete" });
+    await relativeClient.call("", { method: "head" });
 
     // Then
-    verify(httpClient.get(apiOrigin, undefined)).once();
-    verify(httpClient.post(apiOrigin, deepEqual({}), undefined)).once();
-    verify(httpClient.patch(apiOrigin, deepEqual({}), undefined)).once();
-    verify(httpClient.delete(apiOrigin, deepEqual({}), undefined)).once();
-    verify(httpClient.head(apiOrigin, undefined)).once();
+    verify(httpClient.call(apiOrigin, deepEqual({ method: "get" }))).once();
+    verify(httpClient.call(apiOrigin, deepEqual({ method: "post" }))).once();
+    verify(httpClient.call(apiOrigin, deepEqual({ method: "patch" }))).once();
+    verify(httpClient.call(apiOrigin, deepEqual({ method: "delete" }))).once();
+    verify(httpClient.call(apiOrigin, deepEqual({ method: "head" }))).once();
   });
 });
