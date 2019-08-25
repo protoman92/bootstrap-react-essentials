@@ -21,7 +21,7 @@ export function createURLDataSyncRepository(
         params: urlParams(additionalQuery)
       }),
     getURLQuery: () => getURLQuery({ location }),
-    onURLStateChanges: (...args) => history.onStateChange(...args),
+    onURLStateChange: (...args) => history.onStateChange(...args),
     update: data =>
       client.fetch(location.pathname, {
         data,

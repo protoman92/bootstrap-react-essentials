@@ -28,13 +28,12 @@ describe("Auto URL data sync", () => {
   const TestComponent = createTestComponent<URLDataSyncInProps<Data>>();
   let EnhancedComponent: ComponentType<URLDataSyncOutProps<Data>>;
   let repository: Repository.URLDataSync;
-  let WrappedElement: JSX.Element;
 
   beforeEach(() => {
     repository = spy<Repository.URLDataSync>({
       get: () => Promise.reject(""),
       getURLQuery: () => ({}),
-      onURLStateChanges: () => ({} as any),
+      onURLStateChange: () => ({} as any),
       replaceURLQuery: () => {},
       update: () => Promise.reject("")
     });
@@ -42,8 +41,6 @@ describe("Auto URL data sync", () => {
     EnhancedComponent = urlDataSyncHOC<Data>(instance(repository))(
       TestComponent
     );
-
-    WrappedElement = <EnhancedComponent />;
   });
 
   it("Should perform get correctly", async () => {
@@ -52,6 +49,7 @@ describe("Auto URL data sync", () => {
     when(repository.get(anything())).thenResolve(data);
 
     // When
+    const WrappedElement = <EnhancedComponent />;
     const wrapper = mount(WrappedElement);
     const { getData } = wrapper.find(TestComponent).props();
     getData();
@@ -73,6 +71,7 @@ describe("Auto URL data sync", () => {
     when(repository.update(anything())).thenResolve(newData);
 
     // When
+    const WrappedElement = <EnhancedComponent />;
     const wrapper = mount(WrappedElement);
     const { updateData } = wrapper.find(TestComponent).props();
     updateData(newData);
@@ -108,6 +107,7 @@ describe("Auto URL data sync", () => {
     const query = { a: "1", b: "2" };
 
     // When
+    const WrappedElement = <EnhancedComponent />;
     const wrapper = mount(WrappedElement);
     const { replaceURLQuery } = wrapper.find(TestComponent).props();
     replaceURLQuery(query);
@@ -127,6 +127,7 @@ describe("Auto URL data sync", () => {
     when(repository.replaceURLQuery(anything())).thenResolve();
 
     // When
+    const WrappedElement = <EnhancedComponent />;
     const wrapper = mount(WrappedElement);
     const { appendURLQuery } = wrapper.find(TestComponent).props();
     appendURLQuery(newQuery);
@@ -146,6 +147,7 @@ describe("Auto URL data sync", () => {
     when(repository.get(anything())).thenReject(error);
 
     // When
+    const WrappedElement = <EnhancedComponent />;
     const wrapper = mount(WrappedElement);
     const { getData } = wrapper.find(TestComponent).props();
     await getData();
@@ -165,6 +167,7 @@ describe("Auto URL data sync", () => {
     when(repository.update(anything())).thenReject(error);
 
     // When
+    const WrappedElement = <EnhancedComponent />;
     const wrapper = mount(WrappedElement);
     const { saveData } = wrapper.find(TestComponent).props();
     saveData();
@@ -181,13 +184,14 @@ describe("Auto URL data sync", () => {
     // Setup
     const subscription = spy<Subscription>({ unsubscribe: () => {} });
 
-    when(repository.onURLStateChanges(anything())).thenReturn(
+    when(repository.onURLStateChange(anything())).thenReturn(
       instance(subscription)
     );
 
     // When
+    const WrappedElement = <EnhancedComponent />;
     const wrapper = mount(WrappedElement);
-    const [callbackFn] = capture(repository.onURLStateChanges).first();
+    const [callbackFn] = capture(repository.onURLStateChange).first();
     callbackFn("pushState", {}, "", "");
     callbackFn("replaceState", {}, "", "");
     await asyncTimeout(1);
@@ -196,6 +200,31 @@ describe("Auto URL data sync", () => {
     // Then
     verify(repository.get(undefined)).once();
     verify(subscription.unsubscribe()).once();
+  });
+
+  it("Should use injected sync repository if possible", async () => {
+    // Setup
+    const injectedRepository = spy<Repository.URLDataSync>({
+      get: () => Promise.resolve({} as any),
+      getURLQuery: () => ({}),
+      onURLStateChange: () => ({} as any),
+      replaceURLQuery: () => {},
+      update: () => Promise.reject("")
+    });
+
+    // When
+    const WrappedElement = (
+      <EnhancedComponent syncRepository={instance(injectedRepository)} />
+    );
+
+    const wrapper = mount(WrappedElement);
+    const { getData } = wrapper.find(TestComponent).props();
+    getData();
+    await asyncTimeout(1);
+
+    // Then
+    verify(injectedRepository.get(undefined)).once();
+    verify(repository.get(undefined)).never();
   });
 });
 
@@ -209,7 +238,7 @@ describe("URL paginated data sync", () => {
     urlDataSync = spy<Repository.URLDataSync>({
       get: () => Promise.reject(""),
       getURLQuery: () => ({}),
-      onURLStateChanges: () => ({} as any),
+      onURLStateChange: () => ({} as any),
       replaceURLQuery: () => {},
       update: () => Promise.reject("")
     });

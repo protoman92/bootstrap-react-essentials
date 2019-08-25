@@ -31,7 +31,9 @@ export interface URLDataSyncInProps<Data> {
   appendURLQuery(query: URLQueryMap): void;
 }
 
-export interface URLDataSyncOutProps<Data> {}
+export interface URLDataSyncOutProps<Data> {
+  syncRepository?: typeof defaultRepository;
+}
 
 /**
  * Automatically sync with current URL by requesting data from server using
@@ -50,6 +52,12 @@ export function urlDataSyncHOC<Data, OutProps = {}>(
   URLDataSyncInProps<Data> & OutProps,
   URLDataSyncOutProps<Data> & OutProps
 > {
+  function getSyncRepository({
+    syncRepository: injectedRepository
+  }: any): typeof defaultRepository {
+    return injectedRepository || syncRepository;
+  }
+
   async function callAPI<T>(
     { setDataError, setIsLoadingData }: any,
     callFn: () => Promise<T>,
@@ -70,11 +78,15 @@ export function urlDataSyncHOC<Data, OutProps = {}>(
 
   function getData(props: any, additionalQuery?: URLQueryMap) {
     const { setData } = props;
-    return callAPI(props, () => syncRepository.get(additionalQuery), setData);
+    return callAPI(
+      props,
+      () => getSyncRepository(props).get(additionalQuery),
+      setData
+    );
   }
 
-  async function replaceURLQuery(query: URLQueryMap) {
-    await syncRepository.replaceURLQuery(query);
+  async function replaceURLQuery(props: any, query: URLQueryMap) {
+    await getSyncRepository(props).replaceURLQuery(query);
   }
 
   return compose(
@@ -92,15 +104,15 @@ export function urlDataSyncHOC<Data, OutProps = {}>(
     ),
     withProps((props: any) => ({
       appendURLQuery: async (query: URLQueryMap) => {
-        const urlQuery = await syncRepository.getURLQuery();
-        replaceURLQuery({ ...urlQuery, ...query });
+        const urlQuery = await getSyncRepository(props).getURLQuery();
+        replaceURLQuery(props, { ...urlQuery, ...query });
       },
       getData: () => getData(props),
-      getURLQuery: () => syncRepository.getURLQuery(),
-      replaceURLQuery: (query: URLQueryMap) => replaceURLQuery(query),
+      getURLQuery: () => getSyncRepository(props).getURLQuery(),
+      replaceURLQuery: (query: URLQueryMap) => replaceURLQuery(props, query),
       saveData: () => {
         const { data, setData } = props;
-        callAPI(props, () => syncRepository.update(data), setData);
+        callAPI(props, () => getSyncRepository(props).update(data), setData);
       },
       updateData: (newData: Partial<Data>) => {
         const { data, setData } = props;
@@ -115,7 +127,9 @@ export function urlDataSyncHOC<Data, OutProps = {}>(
           componentDidMount() {
             const { getData } = this.props;
 
-            urlStateSubscription = syncRepository.onURLStateChanges(event => {
+            urlStateSubscription = getSyncRepository(
+              this.props
+            ).onURLStateChange(event => {
               switch (event) {
                 case "replaceState":
                   getData();
@@ -169,7 +183,7 @@ export interface URLCursorPaginatedSyncOutProps<T>
  * display table data. For other kinds of data use the data sync HOC.
  */
 export function urlCursorPaginatedSyncHOC<T>(
-  syncRepository: typeof defaultRepository = /* istanbul ignore next */ defaultRepository
+  syncRepository: typeof defaultRepository = defaultRepository
 ): FunctionalEnhancer<
   URLCursorPaginatedSyncInProps<T>,
   URLCursorPaginatedSyncOutProps<T>
