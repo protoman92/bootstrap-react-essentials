@@ -86,30 +86,6 @@ describe("URL sync repository", () => {
     expect(result).toEqual(data);
   });
 
-  it("Should update URL query correctly", async () => {
-    // Setup && When
-    await urlDataSync.updateURLQuery({ a: "1", b: ["2", "3"] });
-    await urlDataSync.updateURLQuery({ a: Array(0), b: Array(0), c: "10" });
-    await urlDataSync.updateURLQuery({});
-
-    // Then
-    verify(history.replaceState(deepEqual({}), "?a=1&b=2&b=3"));
-    verify(history.replaceState(deepEqual({}), "?c=10"));
-    verify(history.replaceState(deepEqual({}), ""));
-  });
-
-  it("Should get URL query correctly", async () => {
-    // Setup
-    const query = { a: "1", b: "2" };
-    location.search = `?${querystring.stringify(query)}`;
-
-    // When
-    const result = await urlDataSync.getURLQuery();
-
-    // Then
-    expect(result).toEqual(query);
-  });
-
   it("Should add on additional query correctly", async () => {
     // Setup
     when(client.get(anything(), anything())).thenResolve({});
