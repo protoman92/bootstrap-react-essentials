@@ -24,6 +24,7 @@ describe("URL sync repository", () => {
   };
 
   let history: History;
+  let historyWithCallbacks: HistoryWithCallbacks;
   let client: HTTPClient;
   let urlDataSync: Repository.URLDataSync;
 
@@ -38,14 +39,21 @@ describe("URL sync repository", () => {
       forward: () => {},
       go: () => {},
       pushState: () => {},
-      replaceState: () => {},
-      onStateChange: () => {
-        throw new Error("Unsupported");
-      }
+      replaceState: () => {}
+    });
+
+    historyWithCallbacks = spy<HistoryWithCallbacks>({
+      onStateChange: () => ({ unsubscribe: () => {} }),
+      pushState: () => {},
+      replaceState: () => {}
     });
 
     urlDataSync = createURLDataSyncRepository(
-      { history: instance(history), location },
+      {
+        history: instance(history),
+        historyWithCallbacks: instance(historyWithCallbacks),
+        location
+      },
       instance(client)
     );
   });

@@ -38,8 +38,11 @@ describe("Utilities", () => {
 
   it("Update URL query should work", async () => {
     // Setup
-    const history = spy<Window["history"]>({ replaceState: () => {} } as any);
-    const window = { history: instance(history) };
+    const history = spy<Window["historyWithCallbacks"]>({
+      replaceState: () => {}
+    } as any);
+
+    const window = { historyWithCallbacks: instance(history) };
 
     // When
     replaceURLQuery(window, { a: "1", b: ["2", "3"] });

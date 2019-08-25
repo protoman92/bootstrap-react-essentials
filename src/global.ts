@@ -6,7 +6,7 @@ import { StrictOmit } from "ts-essentials";
 declare module "recompose" {}
 
 declare global {
-  namespace History {
+  namespace HistoryWithCallbacks {
     type StateChangeCallback = (
       event: "pushState" | "replaceState",
       data: any,
@@ -15,8 +15,13 @@ declare global {
     ) => void;
   }
 
-  interface History {
-    onStateChange(fn: History.StateChangeCallback): Subscription;
+  interface HistoryWithCallbacks
+    extends Pick<History, "pushState" | "replaceState"> {
+    onStateChange(fn: HistoryWithCallbacks.StateChangeCallback): Subscription;
+  }
+
+  interface Window {
+    historyWithCallbacks: HistoryWithCallbacks;
   }
 }
 
@@ -56,7 +61,7 @@ declare global {
 
   namespace Repository {
     interface URLDataSync {
-      readonly onURLStateChange: Window["history"]["onStateChange"];
+      readonly onURLStateChange: HistoryWithCallbacks["onStateChange"];
       get<T>(additionalQuery?: URLQueryMap): Promise<T>;
       getURLQuery(): URLQueryMap;
       update<T>(newData: T): Promise<T>;

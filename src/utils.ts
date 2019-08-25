@@ -21,7 +21,7 @@ export function toArray<T>(value: T | readonly T[]): readonly T[] {
 }
 
 export function replaceURLQuery(
-  { history }: Pick<Window, "history">,
+  { historyWithCallbacks }: Pick<Window, "historyWithCallbacks">,
   query: URLQueryMap
 ) {
   const newQueryMap = Object.entries(query)
@@ -29,5 +29,5 @@ export function replaceURLQuery(
     .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
 
   const merged = querystring.stringify(newQueryMap);
-  history.replaceState({}, "", !!merged ? `?${merged}` : "");
+  historyWithCallbacks.replaceState({}, "", !!merged ? `?${merged}` : "");
 }
