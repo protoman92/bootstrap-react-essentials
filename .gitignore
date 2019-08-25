@@ -1,4 +1,5 @@
 coverage
-dist
+**dist**
+dist/**
 node_modules
 .vscode

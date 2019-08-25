@@ -38,7 +38,10 @@ describe("URL sync repository", () => {
       forward: () => {},
       go: () => {},
       pushState: () => {},
-      replaceState: () => {}
+      replaceState: () => {},
+      onStateChange: () => {
+        throw new Error("Unsupported");
+      }
     });
 
     urlDataSync = createURLDataSyncRepository(

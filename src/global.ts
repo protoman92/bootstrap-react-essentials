@@ -6,6 +6,29 @@ import { StrictOmit } from "ts-essentials";
 declare module "recompose" {}
 
 declare global {
+  namespace History {
+    type StateChangeCallback = (
+      event: "pushState" | "replaceState",
+      data: any,
+      title: string,
+      url?: string | null
+    ) => void;
+  }
+
+  interface History {
+    onStateChange(fn: History.StateChangeCallback): Subscription;
+  }
+}
+
+declare global {
+  interface Workarounds {
+    apply(): void;
+  }
+
+  interface Subscription {
+    unsubscribe(): void;
+  }
+
   type FunctionalEnhancer<I, O> = (c: ComponentType<I>) => ComponentType<O>;
 
   type URLQueryMap = Readonly<{
