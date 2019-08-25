@@ -1,11 +1,4 @@
-import axios from "axios";
-
-/* istanbul ignore next */
-export function createHTTPClient(client: typeof axios = axios): HTTPClient {
-  return {
-    call: (url, config) => client(url, config).then(({ data }) => data)
-  };
-}
+import httpClient from "./httpClient";
 
 /**
  * Treat client and server as if originating from the same domain, and whatever
@@ -27,9 +20,12 @@ export function createRelativeHTTPClient(
   }
 
   return {
-    call: (url, config) => {
+    fetch: (url, config) => {
       const fullURL = getFullURL(url);
-      return client.call(fullURL, config);
+      return client.fetch(fullURL, config);
     }
   };
 }
+
+/* istanbul ignore next */
+export default createRelativeHTTPClient(window, httpClient);

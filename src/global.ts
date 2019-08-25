@@ -28,7 +28,7 @@ declare global {
 
   /** Standard HTTP client that can perform API requests. */
   interface HTTPClient {
-    call<T>(url: string, config: HTTPClient.Config): Promise<T>;
+    fetch<T>(url: string, config: HTTPClient.Config): Promise<T>;
   }
 
   namespace Repository {
