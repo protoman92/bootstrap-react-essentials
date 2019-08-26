@@ -41,9 +41,7 @@ declare global {
   }>;
 
   /** Common Redux state type that contains some basic properties. */
-  interface ReduxState {
-    readonly repository: Repository;
-  }
+  interface ReduxState {}
 
   /** Common Redux action type that contains a payload. */
   interface ReduxAction<Payload = unknown> extends Action<string> {

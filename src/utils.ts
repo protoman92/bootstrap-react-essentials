@@ -6,16 +6,6 @@ export function getURLQuery({
   return querystring.parse(search.slice(1));
 }
 
-/**
- * Merge query maps into one big query map, concatenating values at common
- * keys together into an Array.
- */
-export function mergeQueryMaps(...queries: readonly URLQueryMap[]) {
-  return querystring.parse(
-    queries.map(query => querystring.stringify(query)).join("&")
-  );
-}
-
 export function toArray<T>(value: T | readonly T[]): readonly T[] {
   return value instanceof Array ? value : [value];
 }
@@ -30,4 +20,20 @@ export function replaceURLQuery(
 
   const merged = querystring.stringify(newQueryMap);
   historyWithCallbacks.replaceState({}, "", !!merged ? `?${merged}` : "");
+}
+
+export function appendURLQuery(
+  {
+    historyWithCallbacks,
+    location
+  }: Pick<Window, "historyWithCallbacks" | "location">,
+  urlQuery: URLQueryMap
+) {
+  const existingURLQuery = { ...getURLQuery({ location }) };
+
+  Object.entries(urlQuery).forEach(([key, value]) => {
+    existingURLQuery[key] = value;
+  });
+
+  replaceURLQuery({ historyWithCallbacks }, existingURLQuery);
 }

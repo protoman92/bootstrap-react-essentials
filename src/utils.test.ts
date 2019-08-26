@@ -1,6 +1,6 @@
 import querystring from "querystring";
 import { deepEqual, instance, spy, verify } from "ts-mockito";
-import { getURLQuery, mergeQueryMaps, toArray, replaceURLQuery } from "./utils";
+import { appendURLQuery, getURLQuery, replaceURLQuery, toArray } from "./utils";
 
 describe("Utilities", () => {
   it("Should get URL query correctly", async () => {
@@ -16,27 +16,12 @@ describe("Utilities", () => {
     expect(result).toEqual(query);
   });
 
-  it("Merge query maps should work", async () => {
-    // Setup && When
-    const merged1 = mergeQueryMaps(
-      { a: ["1", "2", "3"], b: "1", c: "1" },
-      { a: ["1", "2", "3"], b: ["2", "3"], c: "1" }
-    );
-
-    // Then
-    expect(merged1).toEqual({
-      a: ["1", "2", "3", "1", "2", "3"],
-      b: ["1", "2", "3"],
-      c: ["1", "1"]
-    });
-  });
-
   it("To array should work", async () => {
     expect(toArray(1)).toEqual([1]);
     expect(toArray([1, 2, 3])).toEqual([1, 2, 3]);
   });
 
-  it("Update URL query should work", async () => {
+  it("Replace URL query should work", async () => {
     // Setup
     const history = spy<Window["historyWithCallbacks"]>({
       replaceState: () => {}
@@ -53,5 +38,42 @@ describe("Utilities", () => {
     verify(history.replaceState(deepEqual({}), "?a=1&b=2&b=3"));
     verify(history.replaceState(deepEqual({}), "?c=10"));
     verify(history.replaceState(deepEqual({}), ""));
+  });
+
+  it("Append URL query should work", async () => {
+    // Setup
+    const history = spy<Window["historyWithCallbacks"]>({
+      replaceState: () => {}
+    } as any);
+
+    // When && Then 1
+    appendURLQuery(
+      {
+        historyWithCallbacks: instance(history),
+        location: { search: "?a=0" } as any
+      },
+      { a: "1", b: ["2", "3"] }
+    );
+
+    appendURLQuery(
+      {
+        historyWithCallbacks: instance(history),
+        location: { search: "?a=0&b=1" } as any
+      },
+      { a: Array(0), b: Array(0), c: "10" }
+    );
+
+    appendURLQuery(
+      {
+        historyWithCallbacks: instance(history),
+        location: { search: "?a=0&b=1" } as any
+      },
+      {}
+    );
+
+    // Then
+    verify(history.replaceState(deepEqual({}), "?a=0&b=2&b=3"));
+    verify(history.replaceState(deepEqual({}), "?c=10"));
+    verify(history.replaceState(deepEqual({}), "?a=0&b=1"));
   });
 });
