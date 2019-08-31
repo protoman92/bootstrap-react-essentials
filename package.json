@@ -1,6 +1,6 @@
 {
   "name": "bootstrap-react-essentials",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "description": "Library of essentials for a bootstrapped React project",
   "scripts": {
     "build": "tsc",
@@ -25,6 +25,7 @@
   "devDependencies": {
     "@types/enzyme": "^3.10.1",
     "@types/enzyme-adapter-react-16": "^1.0.5",
+    "@types/history": "^4.7.3",
     "@types/jest": "^24.0.15",
     "@types/lodash": "^4.14.136",
     "@types/react-redux": "^7.1.1",

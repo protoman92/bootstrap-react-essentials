@@ -6,11 +6,10 @@ describe("Utilities", () => {
   it("Should get URL query correctly", async () => {
     // Setup
     const query = { a: "1", b: "2" };
-    const location: Window["location"] = {} as any;
-    location.search = `?${querystring.stringify(query)}`;
+    const location = { search: `?${querystring.stringify(query)}` };
 
     // When
-    const result = await getURLQuery({ location });
+    const result = await getURLQuery(location);
 
     // Then
     expect(result).toEqual(query);
@@ -27,12 +26,12 @@ describe("Utilities", () => {
       replaceState: () => {}
     } as any);
 
-    const window = { historyWithCallbacks: instance(history) };
+    const historyInstance = instance(history);
 
     // When
-    replaceURLQuery(window, { a: "1", b: ["2", "3"] });
-    replaceURLQuery(window, { a: Array(0), b: Array(0), c: "10" });
-    replaceURLQuery(window, {});
+    replaceURLQuery(historyInstance, { a: "1", b: ["2", "3"] });
+    replaceURLQuery(historyInstance, { a: Array(0), b: Array(0), c: "10" });
+    replaceURLQuery(historyInstance, {});
 
     // Then
     verify(history.replaceState(deepEqual({}), "?a=1&b=2&b=3"));
@@ -48,28 +47,25 @@ describe("Utilities", () => {
 
     // When && Then 1
     appendURLQuery(
+      instance(history),
+      { search: "?a=0" },
       {
-        historyWithCallbacks: instance(history),
-        location: { search: "?a=0" } as any
-      },
-      { a: "1", b: ["2", "3"] }
+        a: "1",
+        b: ["2", "3"]
+      }
     );
 
     appendURLQuery(
+      instance(history),
+      { search: "?a=0&b=1" },
       {
-        historyWithCallbacks: instance(history),
-        location: { search: "?a=0&b=1" } as any
-      },
-      { a: Array(0), b: Array(0), c: "10" }
+        a: Array(0),
+        b: Array(0),
+        c: "10"
+      }
     );
 
-    appendURLQuery(
-      {
-        historyWithCallbacks: instance(history),
-        location: { search: "?a=0&b=1" } as any
-      },
-      {}
-    );
+    appendURLQuery(instance(history), { search: "?a=0&b=1" }, {});
 
     // Then
     verify(history.replaceState(deepEqual({}), "?a=0&b=2&b=3"));

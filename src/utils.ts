@@ -1,8 +1,8 @@
 import querystring from "querystring";
 
 export function getURLQuery({
-  location: { search }
-}: Pick<Window, "location">): URLQueryMap {
+  search
+}: Pick<Location | import("history").Location, "search">): URLQueryMap {
   return querystring.parse(search.slice(1));
 }
 
@@ -11,7 +11,7 @@ export function toArray<T>(value: T | readonly T[]): readonly T[] {
 }
 
 export function replaceURLQuery(
-  { historyWithCallbacks }: Pick<Window, "historyWithCallbacks">,
+  historyWithCallbacks: Window["historyWithCallbacks"],
   query: URLQueryMap
 ) {
   const newQueryMap = Object.entries(query)
@@ -23,17 +23,15 @@ export function replaceURLQuery(
 }
 
 export function appendURLQuery(
-  {
-    historyWithCallbacks,
-    location
-  }: Pick<Window, "historyWithCallbacks" | "location">,
+  historyWithCallbacks: Window["historyWithCallbacks"],
+  location: Pick<Location | import("history").Location, "search">,
   urlQuery: URLQueryMap
 ) {
-  const existingURLQuery = { ...getURLQuery({ location }) };
+  const existingURLQuery = { ...getURLQuery(location) };
 
   Object.entries(urlQuery).forEach(([key, value]) => {
     existingURLQuery[key] = value;
   });
 
-  replaceURLQuery({ historyWithCallbacks }, existingURLQuery);
+  replaceURLQuery(historyWithCallbacks, existingURLQuery);
 }

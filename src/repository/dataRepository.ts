@@ -20,7 +20,7 @@ export function createURLDataSyncRepository(
         method: "get",
         params: urlParams(additionalQuery)
       }),
-    getURLQuery: () => getURLQuery(window),
+    getURLQuery: () => getURLQuery(window.location),
     onURLStateChange: (...args) =>
       window.historyWithCallbacks.onStateChange(...args),
     update: data =>
@@ -29,7 +29,8 @@ export function createURLDataSyncRepository(
         method: "patch",
         params: urlParams()
       }),
-    replaceURLQuery: query => replaceURLQuery(window, query)
+    replaceURLQuery: query =>
+      replaceURLQuery(window.historyWithCallbacks, query)
   };
 
   return urlDataSync;
