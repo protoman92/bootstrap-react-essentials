@@ -34,7 +34,9 @@ export function appendURLQuery(
   const existingURLQuery = { ...getURLQuery(location) };
 
   Object.entries(urlQuery).forEach(([key, value]) => {
-    existingURLQuery[key] = toArray(value);
+    if (value !== undefined) {
+      existingURLQuery[key] = toArray(value);
+    }
   });
 
   replaceURLQuery(historyWithCallbacks, existingURLQuery);
