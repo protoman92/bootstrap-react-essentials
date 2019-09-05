@@ -2,8 +2,12 @@ import querystring from "querystring";
 
 export function getURLQuery({
   search
-}: Pick<Location | import("history").Location, "search">): URLQueryMap {
-  return querystring.parse(search.slice(1));
+}: Pick<Location | import("history").Location, "search">): URLQueryArrayMap {
+  const query = querystring.parse(search.slice(1));
+  return Object.entries(query).reduce(
+    (acc, [key, value]) => ({ ...acc, [key]: toArray(value) }),
+    {}
+  );
 }
 
 export function toArray<T>(value: T | readonly T[]): readonly T[] {
@@ -30,7 +34,7 @@ export function appendURLQuery(
   const existingURLQuery = { ...getURLQuery(location) };
 
   Object.entries(urlQuery).forEach(([key, value]) => {
-    existingURLQuery[key] = value;
+    existingURLQuery[key] = toArray(value);
   });
 
   replaceURLQuery(historyWithCallbacks, existingURLQuery);

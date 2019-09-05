@@ -37,7 +37,11 @@ declare global {
   type FunctionalEnhancer<I, O> = (c: ComponentType<I>) => ComponentType<O>;
 
   type URLQueryMap = Readonly<{
-    [K: string]: readonly (string)[] | string | undefined;
+    [K: string]: readonly (string | undefined)[] | string | undefined;
+  }>;
+
+  type URLQueryArrayMap = Readonly<{
+    [K: string]: readonly (string | undefined)[] | undefined;
   }>;
 
   /** Common Redux state type that contains some basic properties. */

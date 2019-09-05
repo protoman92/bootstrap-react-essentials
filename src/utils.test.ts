@@ -12,7 +12,7 @@ describe("Utilities", () => {
     const result = await getURLQuery(location);
 
     // Then
-    expect(result).toEqual(query);
+    expect(result).toEqual({ a: ["1"], b: ["2"] });
   });
 
   it("To array should work", async () => {
