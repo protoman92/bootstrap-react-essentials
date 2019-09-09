@@ -1,7 +1,6 @@
 import { AxiosRequestConfig } from "axios";
 import { ComponentType } from "react";
 import { Action } from "redux";
-import { StrictOmit } from "ts-essentials";
 
 declare module "recompose" {}
 
@@ -53,12 +52,12 @@ declare global {
   }
 
   namespace HTTPClient {
-    type Config = StrictOmit<AxiosRequestConfig, "baseURL" | "url">;
+    type Config = AxiosRequestConfig;
   }
 
   /** Standard HTTP client that can perform API requests. */
   interface HTTPClient {
-    fetch<T>(url: string, config: HTTPClient.Config): Promise<T>;
+    fetch<T>(config: HTTPClient.Config): Promise<T>;
   }
 
   namespace Repository {

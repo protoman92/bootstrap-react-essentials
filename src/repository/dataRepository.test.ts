@@ -61,43 +61,38 @@ describe("URL sync repository", () => {
   it("Should get data correctly", async () => {
     // Setup
     const data = { a: 0, b: 1, c: 2 };
-    when(client.fetch(pathname, anything())).thenResolve(data);
+    when(client.fetch(anything())).thenResolve(data);
 
     // When
     const result = await urlDataSync.get();
 
     // Then
-    verify(client.fetch(pathname, deepEqual({ method: "get", params }))).once();
+    verify(client.fetch(deepEqual({ method: "get", params }))).once();
     expect(result).toEqual(data);
   });
 
   it("Should update data correctly", async () => {
     // Setup
     const data = { a: 0, b: 1, c: 2 };
-    when(client.fetch(pathname, anything())).thenResolve(data);
+    when(client.fetch(anything())).thenResolve(data);
 
     // When
     const result = await urlDataSync.update(data);
 
     // Then
-    verify(
-      client.fetch(pathname, deepEqual({ data, method: "patch", params }))
-    ).once();
-
+    verify(client.fetch(deepEqual({ data, method: "patch", params }))).once();
     expect(result).toEqual(data);
   });
 
   it("Should add on additional query correctly", async () => {
     // Setup
-    when(client.fetch(anything(), anything())).thenResolve({});
+    when(client.fetch(anything())).thenResolve({});
     const query = { a: "1", b: "2" };
 
     // When
     await urlDataSync.get(query);
 
     // Then
-    verify(
-      client.fetch(anything(), deepEqual({ method: "get", params: query }))
-    ).once();
+    verify(client.fetch(deepEqual({ method: "get", params: query }))).once();
   });
 });
