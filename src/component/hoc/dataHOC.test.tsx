@@ -26,7 +26,7 @@ describe("Auto URL data sync", () => {
   }
 
   const TestComponent = createTestComponent<URLDataSyncInProps<Data>>();
-  let EnhancedComponent: ComponentType<URLDataSyncOutProps<Data>>;
+  let EnhancedComponent: ComponentType<URLDataSyncOutProps>;
   let repository: Repository.URLDataSync;
 
   beforeEach(() => {
@@ -68,7 +68,7 @@ describe("Auto URL data sync", () => {
   it("Should perform save correctly", async () => {
     // Setup
     const newData: Data = { a: 1, b: 2, c: 3 };
-    when(repository.update(anything())).thenResolve(newData);
+    when(repository.update(anything(), anything())).thenResolve(newData);
 
     // When
     const WrappedElement = <EnhancedComponent />;
@@ -95,7 +95,7 @@ describe("Auto URL data sync", () => {
     await asyncTimeout(1);
 
     // Then
-    verify(repository.update(deepEqual(newData))).once();
+    verify(repository.update(deepEqual(newData), deepEqual({}))).once();
     expect(loading2).toBeFalsy();
     expect(result).toEqual(newData);
   });
@@ -164,7 +164,7 @@ describe("Auto URL data sync", () => {
     // Setup
     const error = new Error("error!");
     when(repository.get(anything())).thenResolve({});
-    when(repository.update(anything())).thenReject(error);
+    when(repository.update(anything(), anything())).thenReject(error);
 
     // When
     const WrappedElement = <EnhancedComponent />;
@@ -230,7 +230,7 @@ describe("Auto URL data sync", () => {
 
 describe("URL paginated data sync", () => {
   const TestComponent = createTestComponent(urlCursorPaginatedSyncHOC);
-  let EnhancedComponent: ComponentType<URLCursorPaginatedSyncOutProps<{}>>;
+  let EnhancedComponent: ComponentType<URLCursorPaginatedSyncOutProps>;
   let urlDataSync: Repository.URLDataSync;
   let WrappedElement: JSX.Element;
 
