@@ -55,8 +55,9 @@ declare global {
   namespace HTTPClient {
     type Config = Pick<
       AxiosRequestConfig,
-      "baseURL" | "data" | "headers" | "method" | "params" | "url"
-    >;
+      "baseURL" | "data" | "headers" | "method" | "url"
+    > &
+      Readonly<{ params?: URLQueryMap }>;
   }
 
   /** Standard HTTP client that can perform API requests. */

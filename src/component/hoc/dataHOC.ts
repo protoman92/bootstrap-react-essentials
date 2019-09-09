@@ -32,6 +32,11 @@ export interface URLDataSyncInProps<Data> {
 }
 
 export interface URLDataSyncOutProps {
+  overrideConfiguration?: StrictOmit<
+    HTTPClient.Config,
+    "data" | "method" | "params"
+  >;
+
   syncRepository?: typeof defaultRepository;
 }
 
@@ -48,15 +53,18 @@ export interface URLDataSyncOutProps {
  */
 export function urlDataSyncHOC<Data>(
   syncRepository: typeof defaultRepository = defaultRepository,
-  overrideConfig: StrictOmit<
-    HTTPClient.Config,
-    "data" | "method" | "params"
-  > = {}
+  overrideConfig: URLDataSyncOutProps["overrideConfiguration"] = {}
 ): FunctionalEnhancer<URLDataSyncInProps<Data>, URLDataSyncOutProps> {
   function getSyncRepository({
-    syncRepository: injectedRepository
-  }: any): typeof defaultRepository {
-    return injectedRepository || syncRepository;
+    syncRepository: injectedRepository = syncRepository
+  }: URLDataSyncOutProps): typeof defaultRepository {
+    return injectedRepository;
+  }
+
+  function getOverrideConfiguration({
+    overrideConfiguration = overrideConfig
+  }: URLDataSyncOutProps): typeof overrideConfig {
+    return overrideConfiguration;
   }
 
   async function callAPI<T>(
@@ -84,6 +92,7 @@ export function urlDataSyncHOC<Data>(
       props,
       () => {
         const syncRepository = getSyncRepository(props);
+        const overrideConfig = getOverrideConfiguration(props);
         return syncRepository.get({ params: extraQuery, ...overrideConfig });
       },
       setData
@@ -123,6 +132,7 @@ export function urlDataSyncHOC<Data>(
           props,
           () => {
             const syncRepository = getSyncRepository(props);
+            const overrideConfig = getOverrideConfiguration(props);
             return syncRepository.update(data, overrideConfig);
           },
           setData
