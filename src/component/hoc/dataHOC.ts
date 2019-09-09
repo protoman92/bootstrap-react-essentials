@@ -78,9 +78,10 @@ export function urlDataSyncHOC<Data, OutProps = {}>(
 
   function getData(props: any, additionalQuery?: URLQueryMap) {
     const { setData } = props;
+
     return callAPI(
       props,
-      () => getSyncRepository(props).get(additionalQuery),
+      () => getSyncRepository(props).get({ params: additionalQuery }),
       setData
     );
   }

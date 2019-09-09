@@ -60,7 +60,7 @@ describe("Auto URL data sync", () => {
     const { data: result, isLoadingData } = wrapper.find(TestComponent).props();
 
     // Then
-    verify(repository.get(undefined)).once();
+    verify(repository.get(deepEqual({ params: undefined }))).once();
     expect(isLoadingData).toBeFalsy();
     expect(result).toEqual(data);
   });
@@ -114,7 +114,7 @@ describe("Auto URL data sync", () => {
     await asyncTimeout(1);
 
     // Then
-    verify(repository.get(undefined)).never();
+    verify(repository.get(anything())).never();
     verify(repository.replaceURLQuery(deepEqual(query)));
   });
 
@@ -134,7 +134,7 @@ describe("Auto URL data sync", () => {
     await asyncTimeout(1);
 
     // Then
-    verify(repository.get(undefined)).never();
+    verify(repository.get(anything())).never();
 
     verify(
       repository.replaceURLQuery(deepEqual({ ...oldQuery, ...newQuery }))
@@ -198,7 +198,7 @@ describe("Auto URL data sync", () => {
     wrapper.unmount();
 
     // Then
-    verify(repository.get(undefined)).once();
+    verify(repository.get(deepEqual({ params: undefined }))).once();
     verify(subscription.unsubscribe()).once();
   });
 
@@ -223,8 +223,8 @@ describe("Auto URL data sync", () => {
     await asyncTimeout(1);
 
     // Then
-    verify(injectedRepository.get(undefined)).once();
-    verify(repository.get(undefined)).never();
+    verify(injectedRepository.get(deepEqual({ params: undefined }))).once();
+    verify(repository.get(anything())).never();
   });
 });
 

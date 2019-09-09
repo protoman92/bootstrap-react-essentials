@@ -1,6 +1,7 @@
 import { AxiosRequestConfig } from "axios";
 import { ComponentType } from "react";
 import { Action } from "redux";
+import { StrictOmit } from "ts-essentials";
 
 declare module "recompose" {}
 
@@ -52,7 +53,10 @@ declare global {
   }
 
   namespace HTTPClient {
-    type Config = AxiosRequestConfig;
+    type Config = Pick<
+      AxiosRequestConfig,
+      "baseURL" | "data" | "headers" | "method" | "params" | "url"
+    >;
   }
 
   /** Standard HTTP client that can perform API requests. */
@@ -61,19 +65,18 @@ declare global {
   }
 
   namespace Repository {
+    namespace URLDataSync {
+      type OverrideConfig = StrictOmit<HTTPClient.Config, "data" | "method">;
+    }
+
     interface URLDataSync {
       readonly onURLStateChange: HistoryWithCallbacks["onStateChange"];
-      get<T>(additionalQuery?: URLQueryMap): Promise<T>;
+      get<T>(override?: URLDataSync.OverrideConfig): Promise<T>;
       getURLQuery(): URLQueryMap;
-      update<T>(newData: T): Promise<T>;
+      update<T>(data: T, override?: URLDataSync.OverrideConfig): Promise<T>;
 
       /** Update URL query without reloading the page. */
       replaceURLQuery(query: URLQueryMap): void;
     }
-  }
-
-  /** Common repository that contains some default repositories. */
-  interface Repository {
-    readonly urlDataSync: Repository.URLDataSync;
   }
 }

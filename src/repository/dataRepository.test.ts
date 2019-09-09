@@ -3,8 +3,9 @@ import { anything, deepEqual, instance, spy, verify, when } from "ts-mockito";
 import { createURLDataSyncRepository } from "./dataRepository";
 
 describe("URL sync repository", () => {
+  const headers = {};
   const pathname = "/users/1";
-  const params = { a: "1", b: "2" };
+  const params = { a: ["1"], b: ["2"] };
   const search = `?${querystring.stringify(params)}`;
 
   const location: Location = {
@@ -67,7 +68,7 @@ describe("URL sync repository", () => {
     const result = await urlDataSync.get();
 
     // Then
-    verify(client.fetch(deepEqual({ method: "get", params }))).once();
+    verify(client.fetch(deepEqual({ headers, method: "get", params }))).once();
     expect(result).toEqual(data);
   });
 
@@ -80,19 +81,24 @@ describe("URL sync repository", () => {
     const result = await urlDataSync.update(data);
 
     // Then
-    verify(client.fetch(deepEqual({ data, method: "patch", params }))).once();
+    verify(
+      client.fetch(deepEqual({ data, headers, method: "patch", params }))
+    ).once();
+
     expect(result).toEqual(data);
   });
 
   it("Should add on additional query correctly", async () => {
     // Setup
     when(client.fetch(anything())).thenResolve({});
-    const query = { a: "1", b: "2" };
+    const newParams = { a: ["2"], b: ["3"], c: ["4"] };
 
     // When
-    await urlDataSync.get(query);
+    await urlDataSync.get({ params: newParams });
 
     // Then
-    verify(client.fetch(deepEqual({ method: "get", params: query }))).once();
+    verify(
+      client.fetch(deepEqual({ headers, method: "get", params: newParams }))
+    ).once();
   });
 });

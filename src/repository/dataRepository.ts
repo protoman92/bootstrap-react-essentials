@@ -1,4 +1,3 @@
-import querystring from "querystring";
 import httpClient from "../http/httpClient";
 import { getURLQuery, replaceURLQuery } from "../utils";
 
@@ -7,28 +6,53 @@ export function createURLDataSyncRepository(
   global: Pick<Window, "history" | "historyWithCallbacks" | "location">,
   client: HTTPClient
 ): Repository.URLDataSync {
-  function urlParams(additionalQuery?: URLQueryMap) {
+  function urlParams() {
+    return getURLQuery(global.location);
+  }
+
+  function prepareConfig(
+    {
+      headers: defaultHeaders,
+      params: defaultParams,
+      ...defaultConfig
+    }: HTTPClient.Config = {},
+    { headers, params, ...config }: HTTPClient.Config = {}
+  ): HTTPClient.Config {
     return {
-      ...additionalQuery,
-      ...querystring.parse(global.location.search.slice(1))
+      ...defaultConfig,
+      ...config,
+      headers: { ...defaultHeaders, ...headers },
+      params: { ...defaultParams, ...params }
     };
   }
 
   const urlDataSync: Repository.URLDataSync = {
-    get: additionalQuery =>
-      client.fetch({
-        method: "get",
-        params: urlParams(additionalQuery)
-      }),
+    get: overrideConfig => {
+      const config = prepareConfig(
+        {
+          method: "get",
+          params: urlParams()
+        },
+        overrideConfig
+      );
+
+      return client.fetch(config);
+    },
     getURLQuery: () => getURLQuery(global.location),
     onURLStateChange: (...args) =>
       global.historyWithCallbacks.onStateChange(...args),
-    update: data =>
-      client.fetch({
-        data,
-        method: "patch",
-        params: urlParams()
-      }),
+    update: (data, overrideConfig) => {
+      const config = prepareConfig(
+        {
+          data,
+          method: "patch",
+          params: urlParams()
+        },
+        overrideConfig
+      );
+
+      return client.fetch(config);
+    },
     replaceURLQuery: query =>
       replaceURLQuery(global.historyWithCallbacks, query)
   };
