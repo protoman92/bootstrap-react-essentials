@@ -1,5 +1,4 @@
 import { AxiosPromise } from "axios";
-import path from "path";
 import { createHTTPClient } from "./httpClient";
 
 describe("Relative HTTP client", () => {
@@ -43,7 +42,7 @@ describe("Relative HTTP client", () => {
 
     // Then
     expect(axiosClient).toHaveBeenCalledWith({
-      baseURL: path.join(location.origin, "api"),
+      baseURL: "/api",
       url: location.pathname
     });
   });

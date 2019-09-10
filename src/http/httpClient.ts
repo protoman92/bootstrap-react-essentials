@@ -1,5 +1,4 @@
 import axios, { AxiosInstance } from "axios";
-import path from "path";
 
 /* istanbul ignore next */
 export function createHTTPClient(
@@ -7,11 +6,8 @@ export function createHTTPClient(
   client: AxiosInstance = axios
 ): HTTPClient {
   return {
-    fetch: ({
-      baseURL = path.join(global.location.origin, "api"),
-      url = global.location.pathname,
-      ...config
-    }) => client({ ...config, baseURL, url }).then(({ data }) => data)
+    fetch: ({ baseURL = "/api", url = global.location.pathname, ...config }) =>
+      client({ ...config, baseURL, url }).then(({ data }) => data)
   };
 }
 
