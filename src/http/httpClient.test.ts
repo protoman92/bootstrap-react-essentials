@@ -38,12 +38,13 @@ describe("Relative HTTP client", () => {
     });
 
     // Then
-    await httpClient.fetch({});
+    await httpClient.fetch({ params: { a: ["1", "2"] } });
 
     // Then
     expect(axiosClient).toHaveBeenCalledWith({
       baseURL: "/api",
-      url: location.pathname
+      url: location.pathname,
+      params: new URLSearchParams("a=1&a=2")
     });
   });
 });
