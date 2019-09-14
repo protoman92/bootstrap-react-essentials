@@ -1,9 +1,22 @@
 import querystring from "querystring";
 
+/** This should take care of both hash and normal URLs. */
 export function getURLQuery({
+  hash,
   search
-}: Pick<Location | import("history").Location, "search">): URLQueryArrayMap {
-  const query = querystring.parse(search.slice(1));
+}: Pick<
+  Location | import("history").Location,
+  "hash" | "search"
+>): URLQueryArrayMap {
+  let query: ReturnType<typeof querystring["parse"]>;
+
+  if (!!search) {
+    query = querystring.parse(search.substr(1));
+  } else {
+    const [, queryComponent = ""] = hash.match(/\?(.*)/i) || [];
+    query = querystring.parse(queryComponent);
+  }
+
   return Object.entries(query).reduce(
     (acc, [key, value]) => ({ ...acc, [key]: toArray(value) }),
     {}
@@ -28,7 +41,7 @@ export function replaceURLQuery(
 
 export function appendURLQuery(
   historyWithCallbacks: Window["historyWithCallbacks"],
-  location: Pick<Location | import("history").Location, "search">,
+  location: Pick<Location | import("history").Location, "hash" | "search">,
   urlQuery: URLQueryMap
 ) {
   const existingURLQuery = { ...getURLQuery(location) };

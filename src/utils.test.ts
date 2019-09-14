@@ -1,12 +1,24 @@
-import querystring from "querystring";
+import { stringify } from "querystring";
 import { deepEqual, instance, spy, verify } from "ts-mockito";
 import { appendURLQuery, getURLQuery, replaceURLQuery, toArray } from "./utils";
 
 describe("Utilities", () => {
-  it("Should get URL query correctly", async () => {
+  it("Should get URL query with search correctly", async () => {
     // Setup
     const query = { a: "1", b: "2" };
-    const location = { search: `?${querystring.stringify(query)}` };
+    const location = { hash: "", search: `?${stringify(query)}` };
+
+    // When
+    const result = await getURLQuery(location);
+
+    // Then
+    expect(result).toEqual({ a: ["1"], b: ["2"] });
+  });
+
+  it("Should get URL query with hash correctly", async () => {
+    // Setup
+    const query = { a: "1", b: "2" };
+    const location = { hash: `#/test?${stringify(query)}`, search: "" };
 
     // When
     const result = await getURLQuery(location);
@@ -39,7 +51,7 @@ describe("Utilities", () => {
     verify(history.replaceState(deepEqual({}), ""));
   });
 
-  it("Append URL query should work", async () => {
+  it("Append URL query with search should work", async () => {
     // Setup
     const history = spy<Window["historyWithCallbacks"]>({
       replaceState: () => {}
@@ -48,16 +60,13 @@ describe("Utilities", () => {
     // When && Then 1
     appendURLQuery(
       instance(history),
-      { search: "?a=0" },
-      {
-        a: "1",
-        b: ["2", "3"]
-      }
+      { hash: "", search: "?a=0" },
+      { a: "1", b: ["2", "3"] }
     );
 
     appendURLQuery(
       instance(history),
-      { search: "?a=0&b=1" },
+      { hash: "", search: "?a=0&b=1" },
       {
         a: Array(0),
         b: Array(0),
@@ -65,7 +74,7 @@ describe("Utilities", () => {
       }
     );
 
-    appendURLQuery(instance(history), { search: "?a=0&b=1" }, {});
+    appendURLQuery(instance(history), { hash: "", search: "?a=0&b=1" }, {});
 
     // Then
     verify(history.replaceState(deepEqual({}), "?a=0&b=2&b=3"));
