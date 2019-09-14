@@ -32,23 +32,59 @@ describe("Utilities", () => {
     expect(toArray([1, 2, 3])).toEqual([1, 2, 3]);
   });
 
-  it("Replace URL query should work", async () => {
+  it("Replace URL query with search should work", async () => {
     // Setup
     const history = spy<Window["historyWithCallbacks"]>({
       replaceState: () => {}
     } as any);
 
     const historyInstance = instance(history);
+    const location = { hash: "" };
 
     // When
-    replaceURLQuery(historyInstance, { a: "1", b: ["2", "3"] });
-    replaceURLQuery(historyInstance, { a: Array(0), b: Array(0), c: "10" });
-    replaceURLQuery(historyInstance, {});
+    replaceURLQuery(historyInstance, location, { a: "1", b: ["2", "3"] });
+
+    replaceURLQuery(historyInstance, location, {
+      a: Array(0),
+      b: Array(0),
+      c: "10"
+    });
+
+    replaceURLQuery(historyInstance, location, {});
 
     // Then
-    verify(history.replaceState(deepEqual({}), "?a=1&b=2&b=3"));
-    verify(history.replaceState(deepEqual({}), "?c=10"));
-    verify(history.replaceState(deepEqual({}), ""));
+    verify(history.replaceState(deepEqual({}), "", "?a=1&b=2&b=3")).once();
+    verify(history.replaceState(deepEqual({}), "", "?c=10")).once();
+    verify(history.replaceState(deepEqual({}), "", "")).once();
+  });
+
+  it("Replace URL query with hash should work", async () => {
+    // Setup
+    const history = spy<Window["historyWithCallbacks"]>({
+      replaceState: () => {}
+    } as any);
+
+    const historyInstance = instance(history);
+    const location = { hash: "#/test?a=1" };
+
+    // When
+    replaceURLQuery(historyInstance, location, { a: "1", b: ["2", "3"] });
+
+    replaceURLQuery(historyInstance, location, {
+      a: Array(0),
+      b: Array(0),
+      c: "10"
+    });
+
+    replaceURLQuery(historyInstance, location, {});
+
+    // Then
+    verify(
+      history.replaceState(deepEqual({}), "", "#/test?a=1&b=2&b=3")
+    ).once();
+
+    verify(history.replaceState(deepEqual({}), "", "#/test?c=10")).once();
+    verify(history.replaceState(deepEqual({}), "", "#/test")).once();
   });
 
   it("Append URL query with search should work", async () => {
@@ -57,7 +93,7 @@ describe("Utilities", () => {
       replaceState: () => {}
     } as any);
 
-    // When && Then 1
+    // When
     appendURLQuery(
       instance(history),
       { hash: "", search: "?a=0" },
@@ -77,8 +113,8 @@ describe("Utilities", () => {
     appendURLQuery(instance(history), { hash: "", search: "?a=0&b=1" }, {});
 
     // Then
-    verify(history.replaceState(deepEqual({}), "?a=0&b=2&b=3"));
-    verify(history.replaceState(deepEqual({}), "?c=10"));
-    verify(history.replaceState(deepEqual({}), "?a=0&b=1"));
+    verify(history.replaceState(deepEqual({}), "", "?a=1&b=2&b=3")).once();
+    verify(history.replaceState(deepEqual({}), "", "?c=10")).once();
+    verify(history.replaceState(deepEqual({}), "", "?a=0&b=1")).once();
   });
 });

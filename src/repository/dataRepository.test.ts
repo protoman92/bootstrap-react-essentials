@@ -47,7 +47,7 @@ describe("URL sync repository", () => {
       onStateChange: () => ({ unsubscribe: () => {} }),
       pushState: () => {},
       replaceState: () => {}
-    });
+    } as any);
 
     urlDataSync = createURLDataSyncRepository(
       {

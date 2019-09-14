@@ -15,8 +15,7 @@ declare global {
     ) => void;
   }
 
-  interface HistoryWithCallbacks
-    extends Pick<History, "pushState" | "replaceState"> {
+  interface HistoryWithCallbacks extends History {
     onStateChange(fn: HistoryWithCallbacks.StateChangeCallback): Subscription;
   }
 

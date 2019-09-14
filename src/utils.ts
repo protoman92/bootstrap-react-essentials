@@ -13,8 +13,8 @@ export function getURLQuery({
   if (!!search) {
     query = querystring.parse(search.substr(1));
   } else {
-    const [, queryComponent = ""] = hash.match(/\?(.*)/i) || [];
-    query = querystring.parse(queryComponent);
+    const [, hashQuery = ""] = hash.match(/\?(.*)/i) || [];
+    query = querystring.parse(hashQuery);
   }
 
   return Object.entries(query).reduce(
@@ -29,14 +29,26 @@ export function toArray<T>(value: T | readonly T[]): readonly T[] {
 
 export function replaceURLQuery(
   historyWithCallbacks: Window["historyWithCallbacks"],
+  { hash }: Pick<Location | import("history").Location, "hash">,
   query: URLQueryMap
 ) {
   const newQueryMap = Object.entries(query)
     .filter(([, value]) => !!value && !!toArray(value).length)
     .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
 
-  const merged = querystring.stringify(newQueryMap);
-  historyWithCallbacks.replaceState({}, "", !!merged ? `?${merged}` : "");
+  let merged = querystring.stringify(newQueryMap);
+  merged = !!merged ? `?${merged}` : "";
+
+  if (!!hash) {
+    const { index } = hash.match(/\?(.*)/i) || [];
+
+    if (index !== undefined) {
+      hash = hash.substring(0, index);
+      merged = `${hash}${merged}`;
+    }
+  }
+
+  historyWithCallbacks.replaceState({}, "", merged);
 }
 
 export function appendURLQuery(
@@ -52,5 +64,5 @@ export function appendURLQuery(
     }
   });
 
-  replaceURLQuery(historyWithCallbacks, existingURLQuery);
+  replaceURLQuery(historyWithCallbacks, location, existingURLQuery);
 }

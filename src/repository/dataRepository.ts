@@ -54,7 +54,7 @@ export function createURLDataSyncRepository(
       return client.fetch(config);
     },
     replaceURLQuery: query =>
-      replaceURLQuery(global.historyWithCallbacks, query)
+      replaceURLQuery(global.historyWithCallbacks, global.location, query)
   };
 
   return urlDataSync;
