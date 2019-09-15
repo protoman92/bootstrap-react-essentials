@@ -1,30 +1,61 @@
 import { stringify } from "querystring";
 import { deepEqual, instance, spy, verify } from "ts-mockito";
-import { appendURLQuery, getURLQuery, replaceURLQuery, toArray } from "./utils";
+import { constructObject } from "./testUtils";
+import {
+  appendURLQuery,
+  getURLComponents,
+  replaceURLQuery,
+  toArray
+} from "./utils";
 
 describe("Utilities", () => {
-  it("Should get URL query with search correctly", async () => {
+  it("Should get URL components with search correctly", async () => {
     // Setup
     const query = { a: "1", b: "2" };
-    const location = { hash: "", search: `?${stringify(query)}` };
+
+    const location = {
+      hash: "",
+      pathname: "/path/name",
+      search: `?${stringify(query)}`
+    };
 
     // When
-    const result = await getURLQuery(location);
+    const {
+      pathname: resultPathName,
+      query: resultQuery
+    } = await getURLComponents(location);
 
     // Then
-    expect(result).toEqual({ a: ["1"], b: ["2"] });
+    expect(resultPathName).toEqual("/path/name");
+    expect(resultQuery).toEqual({ a: ["1"], b: ["2"] });
   });
 
-  it("Should get URL query with hash correctly", async () => {
-    // Setup
-    const query = { a: "1", b: "2" };
-    const location = { hash: `#/test?${stringify(query)}`, search: "" };
+  it("Should get URL components with hash correctly", async () => {
+    // Setup && When && Then: with query
+    const {
+      pathname: resultPathName1,
+      query: resultQuery1
+    } = await getURLComponents({
+      hash: `#/path/name?${stringify({ a: "1", b: "2" })}`,
+      pathname: "",
+      search: ""
+    });
 
-    // When
-    const result = await getURLQuery(location);
+    expect(resultPathName1).toEqual("/path/name");
+    expect(resultQuery1).toEqual({ a: ["1"], b: ["2"] });
 
-    // Then
-    expect(result).toEqual({ a: ["1"], b: ["2"] });
+    // Setup && When && Then: without query
+    const {
+      pathname: resultPathName2,
+      query: resultQuery2
+    } = await getURLComponents({
+      hash: `#/path/name`,
+      pathname: "",
+      search: ""
+    });
+
+    expect(resultPathName2).toEqual("/path/name");
+    expect(resultQuery2).toEqual({});
   });
 
   it("To array should work", async () => {
@@ -34,9 +65,11 @@ describe("Utilities", () => {
 
   it("Replace URL query with search should work", async () => {
     // Setup
-    const history = spy<Window["historyWithCallbacks"]>({
-      replaceState: () => {}
-    } as any);
+    const history = spy<Window["historyWithCallbacks"]>(
+      constructObject<Window["historyWithCallbacks"]>({
+        replaceState: () => {}
+      })
+    );
 
     const historyInstance = instance(history);
     const location = { hash: "" };
@@ -60,9 +93,11 @@ describe("Utilities", () => {
 
   it("Replace URL query with hash should work", async () => {
     // Setup
-    const history = spy<Window["historyWithCallbacks"]>({
-      replaceState: () => {}
-    } as any);
+    const history = spy<Window["historyWithCallbacks"]>(
+      constructObject<Window["historyWithCallbacks"]>({
+        replaceState: () => {}
+      })
+    );
 
     const historyInstance = instance(history);
     const location = { hash: "#/test?a=1" };
@@ -91,20 +126,22 @@ describe("Utilities", () => {
 
   it("Append URL query with search should work", async () => {
     // Setup
-    const history = spy<Window["historyWithCallbacks"]>({
-      replaceState: () => {}
-    } as any);
+    const history = spy<Window["historyWithCallbacks"]>(
+      constructObject<Window["historyWithCallbacks"]>({
+        replaceState: () => {}
+      })
+    );
 
     // When
     appendURLQuery(
       instance(history),
-      { hash: "", search: "?a=0" },
+      { hash: "", pathname: "", search: "?a=0" },
       { a: "1", b: ["2", "3"] }
     );
 
     appendURLQuery(
       instance(history),
-      { hash: "", search: "?a=0&b=1" },
+      { hash: "", pathname: "", search: "?a=0&b=1" },
       {
         a: Array(0),
         b: Array(0),
@@ -112,7 +149,11 @@ describe("Utilities", () => {
       }
     );
 
-    appendURLQuery(instance(history), { hash: "", search: "?a=0&b=1" }, {});
+    appendURLQuery(
+      instance(history),
+      { hash: "", pathname: "", search: "?a=0&b=1" },
+      {}
+    );
 
     // Then
     verify(history.replaceState(deepEqual({}), "", "?a=1&b=2&b=3")).once();

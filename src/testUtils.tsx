@@ -44,3 +44,11 @@ export function createTestComponent<Props>(
     return <div />;
   };
 }
+
+/**
+ * Construct a full object from a partial object. Should only be used during
+ * testing.
+ */
+export function constructObject<T>(object: Partial<T>): T {
+  return object as T;
+}

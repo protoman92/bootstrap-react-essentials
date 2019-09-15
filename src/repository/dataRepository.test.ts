@@ -1,6 +1,7 @@
 import querystring from "querystring";
 import { anything, deepEqual, instance, spy, verify, when } from "ts-mockito";
 import { createURLDataSyncRepository } from "./dataRepository";
+import { constructObject } from "../testUtils";
 
 describe("URL sync repository", () => {
   const headers = {};
@@ -43,11 +44,13 @@ describe("URL sync repository", () => {
       replaceState: () => {}
     });
 
-    historyWithCallbacks = spy<HistoryWithCallbacks>({
-      onStateChange: () => ({ unsubscribe: () => {} }),
-      pushState: () => {},
-      replaceState: () => {}
-    } as any);
+    historyWithCallbacks = spy<HistoryWithCallbacks>(
+      constructObject<HistoryWithCallbacks>({
+        onStateChange: () => ({ unsubscribe: () => {} }),
+        pushState: () => {},
+        replaceState: () => {}
+      })
+    );
 
     urlDataSync = createURLDataSyncRepository(
       {

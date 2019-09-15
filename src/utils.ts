@@ -1,26 +1,40 @@
 import querystring from "querystring";
 
-/** This should take care of both hash and normal URLs. */
-export function getURLQuery({
+export function getURLComponents({
   hash,
+  pathname,
   search
-}: Pick<
-  Location | import("history").Location,
-  "hash" | "search"
->): URLQueryArrayMap {
+}: Pick<Location, "hash" | "pathname" | "search">): Readonly<{
+  pathname: string;
+  query: URLQueryArrayMap;
+}> {
   let query: ReturnType<typeof querystring["parse"]>;
 
-  if (!!search) {
-    query = querystring.parse(search.substr(1));
-  } else {
-    const [, hashQuery = ""] = hash.match(/\?(.*)/i) || [];
+  if (!!hash) {
+    pathname = hash.substring(1);
+    const { 1: hashQuery = "", index } = pathname.match(/\?(.*)/i) || [];
     query = querystring.parse(hashQuery);
+
+    if (index !== undefined) {
+      pathname = pathname.substring(0, index);
+    }
+  } else {
+    query = querystring.parse(search.substr(1));
   }
 
-  return Object.entries(query).reduce(
+  query = Object.entries(query).reduce(
     (acc, [key, value]) => ({ ...acc, [key]: toArray(value) }),
     {}
   );
+
+  return { pathname, query: query as URLQueryArrayMap };
+}
+
+/** This should take care of both hash and normal URLs. */
+export function getURLQuery(
+  location: Pick<Location, "hash" | "pathname" | "search">
+): URLQueryArrayMap {
+  return getURLComponents(location).query;
 }
 
 export function toArray<T>(value: T | readonly T[]): readonly T[] {
@@ -54,7 +68,7 @@ export function replaceURLQuery(
 
 export function appendURLQuery(
   historyWithCallbacks: Window["historyWithCallbacks"],
-  location: Pick<Location | import("history").Location, "hash" | "search">,
+  location: Pick<Location, "hash" | "pathname" | "search">,
   urlQuery: URLQueryMap
 ) {
   const existingURLQuery = { ...getURLQuery(location) };

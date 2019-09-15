@@ -1,5 +1,6 @@
 import axios, { AxiosInstance } from "axios";
 import querystring from "querystring";
+import { getURLComponents } from "../utils";
 
 /* istanbul ignore next */
 export function createHTTPClient(
@@ -9,7 +10,7 @@ export function createHTTPClient(
   return {
     fetch: ({
       baseURL = "/api",
-      url = global.location.pathname,
+      url = getURLComponents(global.location).pathname,
       params = {},
       ...config
     }) => {

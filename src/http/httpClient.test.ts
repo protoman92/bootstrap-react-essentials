@@ -1,7 +1,7 @@
 import { AxiosPromise } from "axios";
 import { createHTTPClient } from "./httpClient";
 
-describe("Relative HTTP client", () => {
+describe("HTTP client", () => {
   const location = {
     origin: "https://example.com",
     pathname: "/path/subpath",
