@@ -44,8 +44,9 @@ export function replaceURLQuery(
 
     if (index !== undefined) {
       hash = hash.substring(0, index);
-      merged = `${hash}${merged}`;
     }
+
+    merged = `${hash}${merged}`;
   }
 
   historyWithCallbacks.replaceState({}, "", merged);

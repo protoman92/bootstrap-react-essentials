@@ -77,6 +77,7 @@ describe("Utilities", () => {
     });
 
     replaceURLQuery(historyInstance, location, {});
+    replaceURLQuery(historyInstance, { hash: "#/test" }, { a: ["1", "2"] });
 
     // Then
     verify(
@@ -85,6 +86,7 @@ describe("Utilities", () => {
 
     verify(history.replaceState(deepEqual({}), "", "#/test?c=10")).once();
     verify(history.replaceState(deepEqual({}), "", "#/test")).once();
+    verify(history.replaceState(deepEqual({}), "", "#/test?a=1&a=2")).once();
   });
 
   it("Append URL query with search should work", async () => {
