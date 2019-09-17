@@ -15,8 +15,8 @@ function or<T>(value1: T | undefined, value2: T) {
 // ############################ AUTO URL DATA SYNC ############################
 
 export interface URLDataSyncInProps<Data> {
-  readonly data: Data | null | undefined;
-  readonly dataError: Error | null | undefined;
+  readonly data: Data | undefined;
+  readonly dataError: Error | undefined;
   readonly isLoadingData: boolean;
 
   getData(): void;
