@@ -33,6 +33,7 @@ describe("Auto URL data sync", () => {
 
   const TestComponent = createTestComponent<URLDataSyncInProps<Data>>();
   let EnhancedComponent: ComponentType<URLDataSyncOutProps>;
+  let WrappedElement: JSX.Element;
   let repository: Repository.URLDataSync;
 
   beforeEach(() => {
@@ -47,6 +48,12 @@ describe("Auto URL data sync", () => {
     EnhancedComponent = urlDataSyncHOC<Data>(instance(repository))(
       TestComponent
     );
+
+    WrappedElement = (
+      <BrowserRouter>
+        <EnhancedComponent />
+      </BrowserRouter>
+    );
   });
 
   it("Should perform get correctly", async () => {
@@ -55,12 +62,6 @@ describe("Auto URL data sync", () => {
     when(repository.get(anything(), anything())).thenResolve(data);
 
     // When
-    const WrappedElement = (
-      <BrowserRouter>
-        <EnhancedComponent />
-      </BrowserRouter>
-    );
-
     const wrapper = mount(WrappedElement);
     const { getData } = wrapper.find(TestComponent).props();
     getData();
@@ -81,12 +82,6 @@ describe("Auto URL data sync", () => {
     when(repository.update(anything(), anything())).thenResolve(newData);
 
     // When
-    const WrappedElement = (
-      <BrowserRouter>
-        <EnhancedComponent />
-      </BrowserRouter>
-    );
-
     const wrapper = mount(WrappedElement);
     const { updateData } = wrapper.find(TestComponent).props();
     updateData(newData);
@@ -122,12 +117,6 @@ describe("Auto URL data sync", () => {
     const query = { a: "1", b: "2" };
 
     // When
-    const WrappedElement = (
-      <BrowserRouter>
-        <EnhancedComponent />
-      </BrowserRouter>
-    );
-
     const wrapper = mount(WrappedElement);
     const { replaceURLQuery } = wrapper.find(TestComponent).props();
     replaceURLQuery(query);
@@ -147,12 +136,6 @@ describe("Auto URL data sync", () => {
     when(repository.replaceURLQuery(anything(), anything())).thenResolve();
 
     // When
-    const WrappedElement = (
-      <BrowserRouter>
-        <EnhancedComponent />
-      </BrowserRouter>
-    );
-
     const wrapper = mount(WrappedElement);
     const { appendURLQuery } = wrapper.find(TestComponent).props();
     appendURLQuery(newQuery);
