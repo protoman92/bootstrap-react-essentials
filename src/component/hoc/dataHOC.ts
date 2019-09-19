@@ -8,6 +8,7 @@ import {
 import withStateHandlers from "recompose/withStateHandlers";
 import { StrictOmit } from "ts-essentials";
 import defaultRepository from "../../repository/dataRepository";
+import { appendURLQuery as defaultAppendURLQuery } from "../../utils";
 
 function or<T>(value1: T | undefined, value2: T) {
   return value1 !== undefined && value1 !== null ? value1 : value2;
@@ -15,7 +16,8 @@ function or<T>(value1: T | undefined, value2: T) {
 
 // ############################ AUTO URL DATA SYNC ############################
 
-export interface URLDataSyncInProps<Data> extends RouteComponentProps<any> {
+export interface URLDataSyncInProps<Data>
+  extends Pick<RouteComponentProps<any>, "history" | "location"> {
   readonly data: Data | undefined;
   readonly dataError: Error | undefined;
   readonly isLoadingData: boolean;
@@ -26,16 +28,10 @@ export interface URLDataSyncInProps<Data> extends RouteComponentProps<any> {
   setIsLoadingData(isLoadingData?: boolean): void;
   saveData(): void;
   updateData(data: Partial<Data>): void;
-  getURLQuery(): URLQueryMap;
-
-  /** Update URL query parameters without reloading and trigger a re-sync. */
-  replaceURLQuery(query: URLQueryMap): void;
-
-  /** Instead of setting URL query, append to existing URL query. */
-  appendURLQuery(query: URLQueryMap): void;
 }
 
-export interface URLDataSyncOutProps extends RouteComponentProps<any> {
+export interface URLDataSyncOutProps
+  extends Pick<RouteComponentProps<any>, "history" | "location"> {
   overrideConfiguration?: StrictOmit<
     HTTPClient.Config,
     "data" | "method" | "params"
@@ -107,15 +103,6 @@ export function urlDataSyncHOC<Data>(
     );
   }
 
-  function replaceURLQuery(
-    props: URLDataSyncInProps<Data>,
-    query: URLQueryMap
-  ) {
-    const { history } = props;
-    const syncRepository = getSyncRepository(props);
-    return syncRepository.replaceURLQuery(history, query);
-  }
-
   return compose(
     withStateHandlers(
       () => ({
@@ -133,17 +120,7 @@ export function urlDataSyncHOC<Data>(
       Partial<URLDataSyncInProps<Data>>,
       URLDataSyncInProps<Data> & URLDataSyncOutProps
     >(props => ({
-      appendURLQuery: async (query: URLQueryMap) => {
-        const { location } = props;
-        const urlQuery = await getSyncRepository(props).getURLQuery(location);
-        replaceURLQuery(props, { ...urlQuery, ...query });
-      },
       getData: () => getData(props),
-      getURLQuery: () => {
-        const { location } = props;
-        return getSyncRepository(props).getURLQuery(location);
-      },
-      replaceURLQuery: (query: URLQueryMap) => replaceURLQuery(props, query),
       saveData: () => {
         const { data, location, setData } = props;
 
@@ -232,23 +209,25 @@ export interface URLCursorPaginatedSyncOutProps extends URLDataSyncOutProps {}
  * display table data. For other kinds of data use the data sync HOC.
  */
 export function urlCursorPaginatedSyncHOC<T>(
-  ...args: Parameters<typeof urlDataSyncHOC>
+  syncRepository: typeof defaultRepository = defaultRepository,
+  overrideConfig: URLDataSyncOutProps["overrideConfiguration"] = {},
+  appendURLQuery = defaultAppendURLQuery
 ): FunctionalEnhancer<
   URLCursorPaginatedSyncInProps<T>,
   URLCursorPaginatedSyncOutProps
 > {
   return compose<any, any>(
-    urlDataSyncHOC(...args),
+    urlDataSyncHOC(syncRepository, overrideConfig),
     withProps((props: any) => ({
       goToNextPage: () => {
-        const { data, appendURLQuery } = props;
+        const { data, history, location } = props;
         const { next } = or(data, { next: undefined });
-        appendURLQuery({ next, previous: undefined });
+        appendURLQuery(history, location, { next, previous: undefined });
       },
       goToPreviousPage: () => {
-        const { data, appendURLQuery } = props;
+        const { data, history, location } = props;
         const { previous } = or(data, { previous: undefined });
-        appendURLQuery({ next: undefined, previous });
+        appendURLQuery(history, location, { next: undefined, previous });
       }
     })),
     withProps(({ data }: any) => {

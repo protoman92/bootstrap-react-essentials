@@ -1,5 +1,5 @@
 import httpClient from "../http/httpClient";
-import { getURLQuery, replaceURLQuery } from "../utils";
+import { getURLQuery } from "../utils";
 
 /** This repository allows synchronization of data with current URL. */
 export function createURLDataSyncRepository(
@@ -37,7 +37,6 @@ export function createURLDataSyncRepository(
 
       return client.fetch(config);
     },
-    getURLQuery: location => getURLQuery(location),
     onURLStateChange: (history, cb) => {
       const unsubscribe = history.listen(cb);
       return { unsubscribe };
@@ -53,8 +52,7 @@ export function createURLDataSyncRepository(
       );
 
       return client.fetch(config);
-    },
-    replaceURLQuery: (history, query) => replaceURLQuery(history, query)
+    }
   };
 
   return urlDataSync;

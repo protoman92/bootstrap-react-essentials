@@ -17,6 +17,7 @@ import {
   constructObject,
   createTestComponent
 } from "../../testUtils";
+import { appendURLQuery as defaultAppendURLQuery } from "../../utils";
 import {
   urlCursorPaginatedSyncHOC,
   urlDataSyncHOC,
@@ -43,9 +44,7 @@ describe("Auto URL data sync", () => {
   beforeEach(() => {
     repository = spy<Repository.URLDataSync>({
       get: () => Promise.reject(""),
-      getURLQuery: () => ({}),
       onURLStateChange: () => ({} as any),
-      replaceURLQuery: () => {},
       update: () => Promise.reject("")
     });
 
@@ -119,48 +118,6 @@ describe("Auto URL data sync", () => {
 
     expect(loading2).toBeFalsy();
     expect(result).toEqual(newData);
-  });
-
-  it("Should update URL queries correctly", async () => {
-    // Setup
-    when(repository.get(anything())).thenResolve({});
-    when(repository.replaceURLQuery(anything(), anything())).thenResolve();
-    const query = { a: "1", b: "2" };
-
-    // When
-    const wrapper = mount(WrappedElement);
-    const { replaceURLQuery } = wrapper.find(TestComponent).props();
-    replaceURLQuery(query);
-    await asyncTimeout(1);
-
-    // Then
-    verify(repository.get(anything())).never();
-    verify(repository.replaceURLQuery(anything(), deepEqual(query)));
-  });
-
-  it("Should append URL queries correctly", async () => {
-    // Setup
-    const oldQuery = { a: "1", b: "2", c: "3" };
-    const newQuery = { a: "2", b: "3" };
-    when(repository.get(anything())).thenResolve({});
-    when(repository.getURLQuery(anything())).thenReturn(oldQuery);
-    when(repository.replaceURLQuery(anything(), anything())).thenResolve();
-
-    // When
-    const wrapper = mount(WrappedElement);
-    const { appendURLQuery } = wrapper.find(TestComponent).props();
-    appendURLQuery(newQuery);
-    await asyncTimeout(1);
-
-    // Then
-    verify(repository.get(anything())).never();
-
-    verify(
-      repository.replaceURLQuery(
-        anything(),
-        deepEqual({ ...oldQuery, ...newQuery })
-      )
-    ).once();
   });
 
   it("Should set error when getting data fails", async () => {
@@ -247,9 +204,7 @@ describe("Auto URL data sync", () => {
     // Setup
     const injectedRepository = spy<Repository.URLDataSync>({
       get: () => Promise.resolve({} as any),
-      getURLQuery: () => ({}),
       onURLStateChange: () => ({} as any),
-      replaceURLQuery: () => {},
       update: () => Promise.reject("")
     });
 
@@ -277,21 +232,22 @@ describe("Auto URL data sync", () => {
 describe("URL paginated data sync", () => {
   const TestComponent = createTestComponent(urlCursorPaginatedSyncHOC);
   let EnhancedComponent: ComponentType<{}>;
-  let urlDataSync: Repository.URLDataSync;
   let WrappedElement: JSX.Element;
+  let appendURLQuery: typeof defaultAppendURLQuery;
+  let urlDataSync: Repository.URLDataSync;
 
   beforeEach(() => {
+    appendURLQuery = jest.fn();
+
     urlDataSync = spy<Repository.URLDataSync>({
       get: () => Promise.reject(""),
-      getURLQuery: () => ({}),
       onURLStateChange: () => ({} as any),
-      replaceURLQuery: () => {},
       update: () => Promise.reject("")
     });
 
     EnhancedComponent = compose<any, any>(
       withRouter,
-      urlCursorPaginatedSyncHOC(instance(urlDataSync))
+      urlCursorPaginatedSyncHOC(instance(urlDataSync), {}, appendURLQuery)
     )(TestComponent);
 
     WrappedElement = (
@@ -303,16 +259,11 @@ describe("URL paginated data sync", () => {
 
   it("Should go to next page correctly", async () => {
     // Setup
-    const urlQuery = { a: "1", b: "2", c: "3" };
-
     when(urlDataSync.get(anything(), anything())).thenResolve({
       results: [],
       next: "next",
       previous: "previous"
     });
-
-    when(urlDataSync.getURLQuery(anything())).thenReturn(urlQuery);
-    when(urlDataSync.replaceURLQuery(anything(), anything())).thenResolve();
 
     // When
     const wrapper = mount(WrappedElement);
@@ -326,26 +277,23 @@ describe("URL paginated data sync", () => {
     await asyncTimeout(1);
 
     // Then
-    verify(
-      urlDataSync.replaceURLQuery(
-        anything(),
-        deepEqual({ ...urlQuery, next: "next", previous: undefined })
-      )
-    ).once();
+    expect(appendURLQuery).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      {
+        next: "next",
+        previous: undefined
+      }
+    );
   });
 
   it("Should go to previous page correctly", async () => {
     // Setup
-    const urlQuery = { a: "1", b: "2", c: "3" };
-
     when(urlDataSync.get(anything(), anything())).thenResolve({
       results: [],
       next: "next",
       previous: "previous"
     });
-
-    when(urlDataSync.getURLQuery(anything())).thenReturn(urlQuery);
-    when(urlDataSync.replaceURLQuery(anything(), anything())).thenResolve();
 
     // When
     const wrapper = mount(WrappedElement);
@@ -359,12 +307,14 @@ describe("URL paginated data sync", () => {
     await asyncTimeout(1);
 
     // Then
-    verify(
-      urlDataSync.replaceURLQuery(
-        anything(),
-        deepEqual({ ...urlQuery, next: undefined, previous: "previous" })
-      )
-    ).once();
+    expect(appendURLQuery).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      {
+        next: undefined,
+        previous: "previous"
+      }
+    );
   });
 
   it("Should map data to array", async () => {
@@ -384,8 +334,6 @@ describe("URL paginated data sync", () => {
       results,
       sortField
     });
-
-    when(urlDataSync.getURLQuery(anything())).thenReturn({});
 
     // When
     const wrapper = mount(WrappedElement);
@@ -416,7 +364,6 @@ describe("URL paginated data sync", () => {
   it("Should give default result array if data is falsy", async () => {
     // Setup
     when(urlDataSync.get(anything())).thenResolve(null);
-    when(urlDataSync.getURLQuery(anything())).thenReturn({});
 
     // When
     const wrapper = mount(WrappedElement);
@@ -447,7 +394,6 @@ describe("URL paginated data sync", () => {
   it("Should give default result array if results are falsy", async () => {
     // Setup
     when(urlDataSync.get(anything())).thenResolve({ results: null });
-    when(urlDataSync.getURLQuery(anything())).thenReturn({});
 
     // When
     const wrapper = mount(WrappedElement);
@@ -460,19 +406,5 @@ describe("URL paginated data sync", () => {
 
     // Then
     expect(data).toEqual([]);
-  });
-
-  it("Should get url query correctly", async () => {
-    // Setup
-    const query = { a: "1", b: "2" };
-    when(urlDataSync.getURLQuery(anything())).thenReturn(query);
-
-    // When
-    const wrapper = mount(WrappedElement);
-    const { getURLQuery } = wrapper.find(TestComponent).props();
-    const resultURLQuery = getURLQuery();
-
-    // Then
-    expect(resultURLQuery).toEqual(query);
   });
 });

@@ -77,8 +77,6 @@ declare global {
         override?: URLDataSync.OverrideConfig
       ): Promise<T>;
 
-      getURLQuery(...args: Parameters<typeof getURLComponents>): URLQueryMap;
-
       onURLStateChange(
         history: Pick<H.History, "listen">,
         cb: H.LocationListener
@@ -89,9 +87,6 @@ declare global {
         data: T,
         override?: URLDataSync.OverrideConfig
       ): Promise<T>;
-
-      /** Update URL query without reloading the page. */
-      replaceURLQuery(...args: Parameters<typeof replaceURLQuery>): void;
     }
   }
 }
