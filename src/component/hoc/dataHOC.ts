@@ -85,17 +85,19 @@ export function urlDataSyncHOC<Data>(
     }
   }
 
-  function getData(props: URLDataSyncInProps<Data>, extraQuery?: URLQueryMap) {
-    const { location, setData } = props;
+  function getData(props: URLDataSyncInProps<Data>) {
+    const {
+      location: { pathname },
+      setData
+    } = props;
 
     return callAPI(
       props,
       () => {
         const syncRepository = getSyncRepository(props);
         const overrideConfig = getOverrideConfiguration(props);
-
         return syncRepository.get<Data>(location, {
-          params: extraQuery,
+          url: pathname,
           ...overrideConfig
         });
       },

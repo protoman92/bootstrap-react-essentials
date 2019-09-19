@@ -1,7 +1,7 @@
 import { ComponentType, mount } from "enzyme";
-import H from "history";
+import H, { createBrowserHistory } from "history";
 import React from "react";
-import { BrowserRouter, withRouter } from "react-router-dom";
+import { BrowserRouter, withRouter, Router } from "react-router-dom";
 import { compose } from "recompose";
 import {
   anything,
@@ -39,9 +39,12 @@ describe("Auto URL data sync", () => {
   >;
 
   let WrappedElement: JSX.Element;
+  let history: H.History;
   let repository: Repository.URLDataSync;
 
   beforeEach(() => {
+    history = createBrowserHistory();
+
     repository = spy<Repository.URLDataSync>({
       get: () => Promise.reject(""),
       onURLStateChange: () => ({} as any),
@@ -54,10 +57,14 @@ describe("Auto URL data sync", () => {
     )(TestComponent);
 
     WrappedElement = (
-      <BrowserRouter>
+      <Router history={history}>
         <EnhancedComponent />
-      </BrowserRouter>
+      </Router>
     );
+  });
+
+  afterEach(() => {
+    history.push("/");
   });
 
   it("Should perform get correctly", async () => {
@@ -66,6 +73,7 @@ describe("Auto URL data sync", () => {
     when(repository.get(anything(), anything())).thenResolve(data);
 
     // When
+    history.push("/pathname");
     const wrapper = mount(WrappedElement);
     const { getData } = wrapper.find(TestComponent).props();
     getData();
@@ -75,7 +83,7 @@ describe("Auto URL data sync", () => {
     const { data: result, isLoadingData } = wrapper.find(TestComponent).props();
 
     // Then
-    verify(repository.get(anything(), deepEqual({ params: undefined }))).once();
+    verify(repository.get(anything(), deepEqual({ url: "/pathname" }))).once();
     expect(isLoadingData).toBeFalsy();
     expect(result).toEqual(data);
   });
@@ -196,7 +204,7 @@ describe("Auto URL data sync", () => {
     wrapper.unmount();
 
     // Then
-    verify(repository.get(anything(), deepEqual({ params: undefined }))).once();
+    verify(repository.get(anything(), deepEqual({ url: "/" }))).once();
     verify(subscription.unsubscribe()).once();
   });
 
@@ -221,10 +229,7 @@ describe("Auto URL data sync", () => {
     await asyncTimeout(1);
 
     // Then
-    verify(
-      injectedRepository.get(anything(), deepEqual({ params: undefined }))
-    ).once();
-
+    verify(injectedRepository.get(anything(), deepEqual({ url: "/" }))).once();
     verify(repository.get(anything())).never();
   });
 });
