@@ -1,4 +1,4 @@
-import { withRouter } from "react-router";
+import { withRouter } from "react-router-dom";
 import {
   compose,
   lifecycle,
