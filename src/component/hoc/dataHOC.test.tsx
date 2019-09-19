@@ -1,7 +1,8 @@
 import { ComponentType, mount } from "enzyme";
 import H from "history";
 import React from "react";
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter, withRouter } from "react-router-dom";
+import { compose } from "recompose";
 import {
   anything,
   capture,
@@ -18,7 +19,6 @@ import {
 } from "../../testUtils";
 import {
   urlCursorPaginatedSyncHOC,
-  URLCursorPaginatedSyncOutProps,
   urlDataSyncHOC,
   URLDataSyncInProps,
   URLDataSyncOutProps
@@ -32,7 +32,11 @@ describe("Auto URL data sync", () => {
   }
 
   const TestComponent = createTestComponent<URLDataSyncInProps<Data>>();
-  let EnhancedComponent: ComponentType<URLDataSyncOutProps>;
+
+  let EnhancedComponent: ComponentType<
+    Pick<URLDataSyncOutProps, "syncRepository">
+  >;
+
   let WrappedElement: JSX.Element;
   let repository: Repository.URLDataSync;
 
@@ -45,9 +49,10 @@ describe("Auto URL data sync", () => {
       update: () => Promise.reject("")
     });
 
-    EnhancedComponent = urlDataSyncHOC<Data>(instance(repository))(
-      TestComponent
-    );
+    EnhancedComponent = compose<any, any>(
+      withRouter,
+      urlDataSyncHOC(instance(repository))
+    )(TestComponent);
 
     WrappedElement = (
       <BrowserRouter>
@@ -79,7 +84,10 @@ describe("Auto URL data sync", () => {
   it("Should perform save correctly", async () => {
     // Setup
     const newData: Data = { a: 1, b: 2, c: 3 };
-    when(repository.update(anything(), anything())).thenResolve(newData);
+
+    when(repository.update(anything(), anything(), anything())).thenResolve(
+      newData
+    );
 
     // When
     const wrapper = mount(WrappedElement);
@@ -105,7 +113,10 @@ describe("Auto URL data sync", () => {
     await asyncTimeout(1);
 
     // Then
-    verify(repository.update(deepEqual(newData), deepEqual({}))).once();
+    verify(
+      repository.update(anything(), deepEqual(newData), deepEqual({}))
+    ).once();
+
     expect(loading2).toBeFalsy();
     expect(result).toEqual(newData);
   });
@@ -180,7 +191,10 @@ describe("Auto URL data sync", () => {
     // Setup
     const error = new Error("error!");
     when(repository.get(anything(), anything())).thenResolve({});
-    when(repository.update(anything(), anything())).thenReject(error);
+
+    when(repository.update(anything(), anything(), anything())).thenReject(
+      error
+    );
 
     // When
     const WrappedElement = (
@@ -262,7 +276,7 @@ describe("Auto URL data sync", () => {
 
 describe("URL paginated data sync", () => {
   const TestComponent = createTestComponent(urlCursorPaginatedSyncHOC);
-  let EnhancedComponent: ComponentType<URLCursorPaginatedSyncOutProps>;
+  let EnhancedComponent: ComponentType<{}>;
   let urlDataSync: Repository.URLDataSync;
   let WrappedElement: JSX.Element;
 
@@ -275,9 +289,10 @@ describe("URL paginated data sync", () => {
       update: () => Promise.reject("")
     });
 
-    EnhancedComponent = urlCursorPaginatedSyncHOC(instance(urlDataSync))(
-      TestComponent
-    );
+    EnhancedComponent = compose<any, any>(
+      withRouter,
+      urlCursorPaginatedSyncHOC(instance(urlDataSync))
+    )(TestComponent);
 
     WrappedElement = (
       <BrowserRouter>

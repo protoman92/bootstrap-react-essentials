@@ -1,4 +1,4 @@
-import { withRouter } from "react-router-dom";
+import { RouteComponentProps } from "react-router";
 import {
   compose,
   lifecycle,
@@ -15,12 +15,15 @@ function or<T>(value1: T | undefined, value2: T) {
 
 // ############################ AUTO URL DATA SYNC ############################
 
-export interface URLDataSyncInProps<Data> {
+export interface URLDataSyncInProps<Data> extends RouteComponentProps<any> {
   readonly data: Data | undefined;
   readonly dataError: Error | undefined;
   readonly isLoadingData: boolean;
 
   getData(): void;
+  setData(data?: Partial<Data>): void;
+  setDataError(error?: Error): void;
+  setIsLoadingData(isLoadingData?: boolean): void;
   saveData(): void;
   updateData(data: Partial<Data>): void;
   getURLQuery(): URLQueryMap;
@@ -32,7 +35,7 @@ export interface URLDataSyncInProps<Data> {
   appendURLQuery(query: URLQueryMap): void;
 }
 
-export interface URLDataSyncOutProps {
+export interface URLDataSyncOutProps extends RouteComponentProps<any> {
   overrideConfiguration?: StrictOmit<
     HTTPClient.Config,
     "data" | "method" | "params"
@@ -69,7 +72,7 @@ export function urlDataSyncHOC<Data>(
   }
 
   async function callAPI<T>(
-    { setDataError, setIsLoadingData }: any,
+    { setDataError, setIsLoadingData }: URLDataSyncInProps<Data>,
     callFn: () => Promise<T>,
     successFn: (res: T) => void
   ) {
@@ -86,7 +89,7 @@ export function urlDataSyncHOC<Data>(
     }
   }
 
-  function getData(props: any, extraQuery?: URLQueryMap) {
+  function getData(props: URLDataSyncInProps<Data>, extraQuery?: URLQueryMap) {
     const { location, setData } = props;
 
     return callAPI(
@@ -95,7 +98,7 @@ export function urlDataSyncHOC<Data>(
         const syncRepository = getSyncRepository(props);
         const overrideConfig = getOverrideConfiguration(props);
 
-        return syncRepository.get(location, {
+        return syncRepository.get<Data>(location, {
           params: extraQuery,
           ...overrideConfig
         });
@@ -104,14 +107,16 @@ export function urlDataSyncHOC<Data>(
     );
   }
 
-  function replaceURLQuery(props: any, query: URLQueryMap) {
-    const { location } = props;
+  function replaceURLQuery(
+    props: URLDataSyncInProps<Data>,
+    query: URLQueryMap
+  ) {
+    const { history } = props;
     const syncRepository = getSyncRepository(props);
-    return syncRepository.replaceURLQuery(location, query);
+    return syncRepository.replaceURLQuery(history, query);
   }
 
   return compose(
-    withRouter,
     withStateHandlers(
       () => ({
         data: undefined as Data | undefined,
@@ -124,7 +129,10 @@ export function urlDataSyncHOC<Data>(
         setIsLoadingData: () => isLoadingData => ({ isLoadingData })
       }
     ),
-    withProps((props: any) => ({
+    withProps<
+      Partial<URLDataSyncInProps<Data>>,
+      URLDataSyncInProps<Data> & URLDataSyncOutProps
+    >(props => ({
       appendURLQuery: async (query: URLQueryMap) => {
         const { location } = props;
         const urlQuery = await getSyncRepository(props).getURLQuery(location);
@@ -137,14 +145,19 @@ export function urlDataSyncHOC<Data>(
       },
       replaceURLQuery: (query: URLQueryMap) => replaceURLQuery(props, query),
       saveData: () => {
-        const { data, setData } = props;
+        const { data, location, setData } = props;
 
         callAPI(
           props,
           () => {
             const syncRepository = getSyncRepository(props);
             const overrideConfig = getOverrideConfiguration(props);
-            return syncRepository.update(data, overrideConfig);
+
+            return syncRepository.update<Data | undefined>(
+              location,
+              data,
+              overrideConfig
+            );
           },
           setData
         );
@@ -155,7 +168,7 @@ export function urlDataSyncHOC<Data>(
       }
     })),
     lifecycle(
-      ((): ReactLifeCycleFunctions<any, any> => {
+      ((): ReactLifeCycleFunctions<URLDataSyncInProps<Data>, {}> => {
         let stateSubscription: Subscription | undefined = undefined;
 
         return {
