@@ -1,7 +1,7 @@
 import { ComponentType, mount } from "enzyme";
 import H, { createBrowserHistory } from "history";
 import React from "react";
-import { BrowserRouter, withRouter, Router } from "react-router-dom";
+import { BrowserRouter, Router, withRouter } from "react-router-dom";
 import { compose } from "recompose";
 import {
   anything,

@@ -86,18 +86,16 @@ export function urlDataSyncHOC<Data>(
   }
 
   function getData(props: URLDataSyncInProps<Data>) {
-    const {
-      location: { pathname },
-      setData
-    } = props;
+    const { location, setData } = props;
 
     return callAPI(
       props,
       () => {
         const syncRepository = getSyncRepository(props);
         const overrideConfig = getOverrideConfiguration(props);
+
         return syncRepository.get<Data>(location, {
-          url: pathname,
+          url: location.pathname,
           ...overrideConfig
         });
       },
