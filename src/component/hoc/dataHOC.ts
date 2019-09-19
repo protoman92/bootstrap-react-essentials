@@ -1,3 +1,4 @@
+import { withRouter } from "react-router";
 import {
   compose,
   lifecycle,
@@ -86,25 +87,31 @@ export function urlDataSyncHOC<Data>(
   }
 
   function getData(props: any, extraQuery?: URLQueryMap) {
-    const { setData } = props;
+    const { location, setData } = props;
 
     return callAPI(
       props,
       () => {
         const syncRepository = getSyncRepository(props);
         const overrideConfig = getOverrideConfiguration(props);
-        return syncRepository.get({ params: extraQuery, ...overrideConfig });
+
+        return syncRepository.get(location, {
+          params: extraQuery,
+          ...overrideConfig
+        });
       },
       setData
     );
   }
 
   function replaceURLQuery(props: any, query: URLQueryMap) {
+    const { location } = props;
     const syncRepository = getSyncRepository(props);
-    return syncRepository.replaceURLQuery(query);
+    return syncRepository.replaceURLQuery(location, query);
   }
 
   return compose(
+    withRouter,
     withStateHandlers(
       () => ({
         data: undefined as Data | undefined,
@@ -119,11 +126,15 @@ export function urlDataSyncHOC<Data>(
     ),
     withProps((props: any) => ({
       appendURLQuery: async (query: URLQueryMap) => {
-        const urlQuery = await getSyncRepository(props).getURLQuery();
+        const { location } = props;
+        const urlQuery = await getSyncRepository(props).getURLQuery(location);
         replaceURLQuery(props, { ...urlQuery, ...query });
       },
       getData: () => getData(props),
-      getURLQuery: () => getSyncRepository(props).getURLQuery(),
+      getURLQuery: () => {
+        const { location } = props;
+        return getSyncRepository(props).getURLQuery(location);
+      },
       replaceURLQuery: (query: URLQueryMap) => replaceURLQuery(props, query),
       saveData: () => {
         const { data, setData } = props;
@@ -149,19 +160,22 @@ export function urlDataSyncHOC<Data>(
 
         return {
           componentDidMount() {
-            const { getData } = this.props;
+            const { history, getData } = this.props;
             const syncRepository = getSyncRepository(this.props);
 
-            stateSubscription = syncRepository.onURLStateChange(event => {
-              switch (event) {
-                case "replaceState":
-                  getData();
-                  break;
+            stateSubscription = syncRepository.onURLStateChange(
+              history,
+              (...[, action]) => {
+                switch (action) {
+                  case "REPLACE":
+                    getData();
+                    break;
 
-                default:
-                  break;
+                  default:
+                    break;
+                }
               }
-            });
+            );
           },
           componentWillUnmount() {
             !!stateSubscription && stateSubscription.unsubscribe();

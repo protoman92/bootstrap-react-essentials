@@ -1,7 +1,9 @@
 import { AxiosRequestConfig } from "axios";
+import H from "history";
 import { ComponentType } from "react";
 import { Action } from "redux";
 import { StrictOmit } from "ts-essentials";
+import { getURLComponents, getURLQuery, replaceURLQuery } from "./utils";
 
 declare module "recompose" {}
 
@@ -70,13 +72,26 @@ declare global {
     }
 
     interface URLDataSync {
-      readonly onURLStateChange: HistoryWithCallbacks["onStateChange"];
-      get<T>(override?: URLDataSync.OverrideConfig): Promise<T>;
-      getURLQuery(): URLQueryMap;
-      update<T>(data: T, override?: URLDataSync.OverrideConfig): Promise<T>;
+      get<T>(
+        location: Parameters<typeof getURLComponents>[0],
+        override?: URLDataSync.OverrideConfig
+      ): Promise<T>;
+
+      getURLQuery(...args: Parameters<typeof getURLComponents>): URLQueryMap;
+
+      onURLStateChange(
+        history: Pick<H.History, "listen">,
+        cb: H.LocationListener
+      ): Subscription;
+
+      update<T>(
+        location: Parameters<typeof getURLQuery>[0],
+        data: T,
+        override?: URLDataSync.OverrideConfig
+      ): Promise<T>;
 
       /** Update URL query without reloading the page. */
-      replaceURLQuery(query: URLQueryMap): void;
+      replaceURLQuery(...args: Parameters<typeof replaceURLQuery>): void;
     }
   }
 }

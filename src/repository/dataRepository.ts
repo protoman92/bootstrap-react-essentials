@@ -3,11 +3,10 @@ import { getURLQuery, replaceURLQuery } from "../utils";
 
 /** This repository allows synchronization of data with current URL. */
 export function createURLDataSyncRepository(
-  global: Pick<Window, "history" | "historyWithCallbacks" | "location">,
   client: HTTPClient
 ): Repository.URLDataSync {
-  function urlParams() {
-    return getURLQuery(global.location);
+  function urlParams(...args: Parameters<typeof getURLQuery>) {
+    return getURLQuery(...args);
   }
 
   function prepareConfig(
@@ -27,38 +26,39 @@ export function createURLDataSyncRepository(
   }
 
   const urlDataSync: Repository.URLDataSync = {
-    get: overrideConfig => {
+    get: (location, overrideConfig) => {
       const config = prepareConfig(
         {
           method: "get",
-          params: urlParams()
+          params: urlParams(location)
         },
         overrideConfig
       );
 
       return client.fetch(config);
     },
-    getURLQuery: () => getURLQuery(global.location),
-    onURLStateChange: (...args) =>
-      global.historyWithCallbacks.onStateChange(...args),
-    update: (data, overrideConfig) => {
+    getURLQuery: location => getURLQuery(location),
+    onURLStateChange: (history, cb) => {
+      const unsubscribe = history.listen(cb);
+      return { unsubscribe };
+    },
+    update: (location, data, overrideConfig) => {
       const config = prepareConfig(
         {
           data,
           method: "patch",
-          params: urlParams()
+          params: urlParams(location)
         },
         overrideConfig
       );
 
       return client.fetch(config);
     },
-    replaceURLQuery: query =>
-      replaceURLQuery(global.historyWithCallbacks, global.location, query)
+    replaceURLQuery: (history, query) => replaceURLQuery(history, query)
   };
 
   return urlDataSync;
 }
 
 /* istanbul ignore next */
-export default createURLDataSyncRepository(window, httpClient);
+export default createURLDataSyncRepository(httpClient);

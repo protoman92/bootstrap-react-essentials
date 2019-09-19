@@ -1,5 +1,7 @@
 import { ComponentType, mount } from "enzyme";
+import H from "history";
 import React from "react";
+import { BrowserRouter } from "react-router-dom";
 import {
   anything,
   capture,
@@ -9,7 +11,11 @@ import {
   verify,
   when
 } from "ts-mockito";
-import { asyncTimeout, createTestComponent } from "../../testUtils";
+import {
+  asyncTimeout,
+  constructObject,
+  createTestComponent
+} from "../../testUtils";
 import {
   urlCursorPaginatedSyncHOC,
   URLCursorPaginatedSyncOutProps,
@@ -46,21 +52,25 @@ describe("Auto URL data sync", () => {
   it("Should perform get correctly", async () => {
     // Setup
     const data: Data = { a: 0, b: 1, c: 2 };
-    when(repository.get(anything())).thenResolve(data);
+    when(repository.get(anything(), anything())).thenResolve(data);
 
     // When
-    const WrappedElement = <EnhancedComponent />;
+    const WrappedElement = (
+      <BrowserRouter>
+        <EnhancedComponent />
+      </BrowserRouter>
+    );
+
     const wrapper = mount(WrappedElement);
     const { getData } = wrapper.find(TestComponent).props();
     getData();
     await asyncTimeout(1);
 
     wrapper.setProps({});
-
     const { data: result, isLoadingData } = wrapper.find(TestComponent).props();
 
     // Then
-    verify(repository.get(deepEqual({ params: undefined }))).once();
+    verify(repository.get(anything(), deepEqual({ params: undefined }))).once();
     expect(isLoadingData).toBeFalsy();
     expect(result).toEqual(data);
   });
@@ -71,7 +81,12 @@ describe("Auto URL data sync", () => {
     when(repository.update(anything(), anything())).thenResolve(newData);
 
     // When
-    const WrappedElement = <EnhancedComponent />;
+    const WrappedElement = (
+      <BrowserRouter>
+        <EnhancedComponent />
+      </BrowserRouter>
+    );
+
     const wrapper = mount(WrappedElement);
     const { updateData } = wrapper.find(TestComponent).props();
     updateData(newData);
@@ -103,11 +118,16 @@ describe("Auto URL data sync", () => {
   it("Should update URL queries correctly", async () => {
     // Setup
     when(repository.get(anything())).thenResolve({});
-    when(repository.replaceURLQuery(anything())).thenResolve();
+    when(repository.replaceURLQuery(anything(), anything())).thenResolve();
     const query = { a: "1", b: "2" };
 
     // When
-    const WrappedElement = <EnhancedComponent />;
+    const WrappedElement = (
+      <BrowserRouter>
+        <EnhancedComponent />
+      </BrowserRouter>
+    );
+
     const wrapper = mount(WrappedElement);
     const { replaceURLQuery } = wrapper.find(TestComponent).props();
     replaceURLQuery(query);
@@ -115,7 +135,7 @@ describe("Auto URL data sync", () => {
 
     // Then
     verify(repository.get(anything())).never();
-    verify(repository.replaceURLQuery(deepEqual(query)));
+    verify(repository.replaceURLQuery(anything(), deepEqual(query)));
   });
 
   it("Should append URL queries correctly", async () => {
@@ -123,11 +143,16 @@ describe("Auto URL data sync", () => {
     const oldQuery = { a: "1", b: "2", c: "3" };
     const newQuery = { a: "2", b: "3" };
     when(repository.get(anything())).thenResolve({});
-    when(repository.getURLQuery()).thenReturn(oldQuery);
-    when(repository.replaceURLQuery(anything())).thenResolve();
+    when(repository.getURLQuery(anything())).thenReturn(oldQuery);
+    when(repository.replaceURLQuery(anything(), anything())).thenResolve();
 
     // When
-    const WrappedElement = <EnhancedComponent />;
+    const WrappedElement = (
+      <BrowserRouter>
+        <EnhancedComponent />
+      </BrowserRouter>
+    );
+
     const wrapper = mount(WrappedElement);
     const { appendURLQuery } = wrapper.find(TestComponent).props();
     appendURLQuery(newQuery);
@@ -137,17 +162,25 @@ describe("Auto URL data sync", () => {
     verify(repository.get(anything())).never();
 
     verify(
-      repository.replaceURLQuery(deepEqual({ ...oldQuery, ...newQuery }))
+      repository.replaceURLQuery(
+        anything(),
+        deepEqual({ ...oldQuery, ...newQuery })
+      )
     ).once();
   });
 
   it("Should set error when getting data fails", async () => {
     // Setup
     const error = new Error("error!");
-    when(repository.get(anything())).thenReject(error);
+    when(repository.get(anything(), anything())).thenReject(error);
 
     // When
-    const WrappedElement = <EnhancedComponent />;
+    const WrappedElement = (
+      <BrowserRouter>
+        <EnhancedComponent />
+      </BrowserRouter>
+    );
+
     const wrapper = mount(WrappedElement);
     const { getData } = wrapper.find(TestComponent).props();
     await getData();
@@ -163,11 +196,16 @@ describe("Auto URL data sync", () => {
   it("Should set error when saving fails", async () => {
     // Setup
     const error = new Error("error!");
-    when(repository.get(anything())).thenResolve({});
+    when(repository.get(anything(), anything())).thenResolve({});
     when(repository.update(anything(), anything())).thenReject(error);
 
     // When
-    const WrappedElement = <EnhancedComponent />;
+    const WrappedElement = (
+      <BrowserRouter>
+        <EnhancedComponent />
+      </BrowserRouter>
+    );
+
     const wrapper = mount(WrappedElement);
     const { saveData } = wrapper.find(TestComponent).props();
     saveData();
@@ -184,21 +222,27 @@ describe("Auto URL data sync", () => {
     // Setup
     const subscription = spy<Subscription>({ unsubscribe: () => {} });
 
-    when(repository.onURLStateChange(anything())).thenReturn(
+    when(repository.onURLStateChange(anything(), anything())).thenReturn(
       instance(subscription)
     );
 
     // When
-    const WrappedElement = <EnhancedComponent />;
+    const WrappedElement = (
+      <BrowserRouter>
+        <EnhancedComponent />
+      </BrowserRouter>
+    );
+
     const wrapper = mount(WrappedElement);
-    const [callbackFn] = capture(repository.onURLStateChange).first();
-    callbackFn("pushState", {}, "", "");
-    callbackFn("replaceState", {}, "", "");
+    const [, callbackFn] = capture(repository.onURLStateChange).first();
+    callbackFn(constructObject<H.Location>({}), "REPLACE");
+    callbackFn(constructObject<H.Location>({}), "PUSH");
+    callbackFn(constructObject<H.Location>({}), "POP");
     await asyncTimeout(1);
     wrapper.unmount();
 
     // Then
-    verify(repository.get(deepEqual({ params: undefined }))).once();
+    verify(repository.get(anything(), deepEqual({ params: undefined }))).once();
     verify(subscription.unsubscribe()).once();
   });
 
@@ -214,7 +258,9 @@ describe("Auto URL data sync", () => {
 
     // When
     const WrappedElement = (
-      <EnhancedComponent syncRepository={instance(injectedRepository)} />
+      <BrowserRouter>
+        <EnhancedComponent syncRepository={instance(injectedRepository)} />
+      </BrowserRouter>
     );
 
     const wrapper = mount(WrappedElement);
@@ -223,7 +269,10 @@ describe("Auto URL data sync", () => {
     await asyncTimeout(1);
 
     // Then
-    verify(injectedRepository.get(deepEqual({ params: undefined }))).once();
+    verify(
+      injectedRepository.get(anything(), deepEqual({ params: undefined }))
+    ).once();
+
     verify(repository.get(anything())).never();
   });
 });
@@ -247,21 +296,25 @@ describe("URL paginated data sync", () => {
       TestComponent
     );
 
-    WrappedElement = <EnhancedComponent />;
+    WrappedElement = (
+      <BrowserRouter>
+        <EnhancedComponent />
+      </BrowserRouter>
+    );
   });
 
   it("Should go to next page correctly", async () => {
     // Setup
     const urlQuery = { a: "1", b: "2", c: "3" };
 
-    when(urlDataSync.get(anything())).thenResolve({
+    when(urlDataSync.get(anything(), anything())).thenResolve({
       results: [],
       next: "next",
       previous: "previous"
     });
 
-    when(urlDataSync.getURLQuery()).thenReturn(urlQuery);
-    when(urlDataSync.replaceURLQuery(anything())).thenResolve();
+    when(urlDataSync.getURLQuery(anything())).thenReturn(urlQuery);
+    when(urlDataSync.replaceURLQuery(anything(), anything())).thenResolve();
 
     // When
     const wrapper = mount(WrappedElement);
@@ -277,6 +330,7 @@ describe("URL paginated data sync", () => {
     // Then
     verify(
       urlDataSync.replaceURLQuery(
+        anything(),
         deepEqual({ ...urlQuery, next: "next", previous: undefined })
       )
     ).once();
@@ -286,14 +340,14 @@ describe("URL paginated data sync", () => {
     // Setup
     const urlQuery = { a: "1", b: "2", c: "3" };
 
-    when(urlDataSync.get(anything())).thenResolve({
+    when(urlDataSync.get(anything(), anything())).thenResolve({
       results: [],
       next: "next",
       previous: "previous"
     });
 
-    when(urlDataSync.getURLQuery()).thenReturn(urlQuery);
-    when(urlDataSync.replaceURLQuery(anything())).thenResolve();
+    when(urlDataSync.getURLQuery(anything())).thenReturn(urlQuery);
+    when(urlDataSync.replaceURLQuery(anything(), anything())).thenResolve();
 
     // When
     const wrapper = mount(WrappedElement);
@@ -309,6 +363,7 @@ describe("URL paginated data sync", () => {
     // Then
     verify(
       urlDataSync.replaceURLQuery(
+        anything(),
         deepEqual({ ...urlQuery, next: undefined, previous: "previous" })
       )
     ).once();
@@ -323,7 +378,7 @@ describe("URL paginated data sync", () => {
     const order = "ascend";
     const sortField = "abc";
 
-    when(urlDataSync.get(anything())).thenResolve({
+    when(urlDataSync.get(anything(), anything())).thenResolve({
       hasNext,
       hasPrevious,
       limit,
@@ -332,7 +387,7 @@ describe("URL paginated data sync", () => {
       sortField
     });
 
-    when(urlDataSync.getURLQuery()).thenReturn({});
+    when(urlDataSync.getURLQuery(anything())).thenReturn({});
 
     // When
     const wrapper = mount(WrappedElement);
@@ -363,7 +418,7 @@ describe("URL paginated data sync", () => {
   it("Should give default result array if data is falsy", async () => {
     // Setup
     when(urlDataSync.get(anything())).thenResolve(null);
-    when(urlDataSync.getURLQuery()).thenReturn({});
+    when(urlDataSync.getURLQuery(anything())).thenReturn({});
 
     // When
     const wrapper = mount(WrappedElement);
@@ -394,7 +449,7 @@ describe("URL paginated data sync", () => {
   it("Should give default result array if results are falsy", async () => {
     // Setup
     when(urlDataSync.get(anything())).thenResolve({ results: null });
-    when(urlDataSync.getURLQuery()).thenReturn({});
+    when(urlDataSync.getURLQuery(anything())).thenReturn({});
 
     // When
     const wrapper = mount(WrappedElement);
@@ -412,7 +467,7 @@ describe("URL paginated data sync", () => {
   it("Should get url query correctly", async () => {
     // Setup
     const query = { a: "1", b: "2" };
-    when(urlDataSync.getURLQuery()).thenReturn(query);
+    when(urlDataSync.getURLQuery(anything())).thenReturn(query);
 
     // When
     const wrapper = mount(WrappedElement);
