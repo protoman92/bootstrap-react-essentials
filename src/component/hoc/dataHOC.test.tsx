@@ -3,20 +3,8 @@ import H, { createBrowserHistory } from "history";
 import React from "react";
 import { BrowserRouter, Router, withRouter } from "react-router-dom";
 import { compose } from "recompose";
-import {
-  anything,
-  capture,
-  deepEqual,
-  instance,
-  spy,
-  verify,
-  when
-} from "ts-mockito";
-import {
-  asyncTimeout,
-  constructObject,
-  createTestComponent
-} from "../../testUtils";
+import { anything, deepEqual, instance, spy, verify, when } from "ts-mockito";
+import { asyncTimeout, createTestComponent } from "../../testUtils";
 import { appendURLQuery as defaultAppendURLQuery } from "../../utils";
 import {
   urlCursorPaginatedSyncHOC,
@@ -47,7 +35,6 @@ describe("Auto URL data sync", () => {
 
     repository = spy<Repository.URLDataSync>({
       get: () => Promise.reject(""),
-      onURLStateChange: () => ({} as any),
       update: () => Promise.reject("")
     });
 
@@ -134,12 +121,6 @@ describe("Auto URL data sync", () => {
     when(repository.get(anything(), anything())).thenReject(error);
 
     // When
-    const WrappedElement = (
-      <BrowserRouter>
-        <EnhancedComponent />
-      </BrowserRouter>
-    );
-
     const wrapper = mount(WrappedElement);
     const { getData } = wrapper.find(TestComponent).props();
     await getData();
@@ -162,12 +143,6 @@ describe("Auto URL data sync", () => {
     );
 
     // When
-    const WrappedElement = (
-      <BrowserRouter>
-        <EnhancedComponent />
-      </BrowserRouter>
-    );
-
     const wrapper = mount(WrappedElement);
     const { saveData } = wrapper.find(TestComponent).props();
     saveData();
@@ -182,37 +157,27 @@ describe("Auto URL data sync", () => {
 
   it("Should get data on URL state changes", async () => {
     // Setup
-    const subscription = spy<Subscription>({ unsubscribe: () => {} });
-
-    when(repository.onURLStateChange(anything(), anything())).thenReturn(
-      instance(subscription)
-    );
+    const wrapper = mount(WrappedElement);
 
     // When
-    const WrappedElement = (
-      <BrowserRouter>
-        <EnhancedComponent />
-      </BrowserRouter>
-    );
-
-    const wrapper = mount(WrappedElement);
-    const [, callbackFn] = capture(repository.onURLStateChange).first();
-    callbackFn(constructObject<H.Location>({}), "REPLACE");
-    callbackFn(constructObject<H.Location>({}), "PUSH");
-    callbackFn(constructObject<H.Location>({}), "POP");
+    history.push("/path1");
+    history.replace("/path2");
     await asyncTimeout(1);
     wrapper.unmount();
 
+    /** After unmount, check if callback is still being executed. */
+    history.replace("/path2");
+    await asyncTimeout(1);
+
     // Then
-    verify(repository.get(anything(), deepEqual({ url: "/" }))).once();
-    verify(subscription.unsubscribe()).once();
+    verify(repository.get(anything(), deepEqual({ url: "/path1" }))).never();
+    verify(repository.get(anything(), deepEqual({ url: "/path2" }))).once();
   });
 
   it("Should use injected sync repository if possible", async () => {
     // Setup
     const injectedRepository = spy<Repository.URLDataSync>({
       get: () => Promise.resolve({} as any),
-      onURLStateChange: () => ({} as any),
       update: () => Promise.reject("")
     });
 
@@ -246,7 +211,6 @@ describe("URL paginated data sync", () => {
 
     urlDataSync = spy<Repository.URLDataSync>({
       get: () => Promise.reject(""),
-      onURLStateChange: () => ({} as any),
       update: () => Promise.reject("")
     });
 

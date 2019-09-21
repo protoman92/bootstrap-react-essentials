@@ -1,3 +1,4 @@
+import H from "history";
 import { RouteComponentProps } from "react-router";
 import {
   compose,
@@ -22,7 +23,11 @@ export interface URLDataSyncInProps<Data>
   readonly dataError: Error | undefined;
   readonly isLoadingData: boolean;
 
-  getData(): void;
+  /**
+   * The location prop from withRouter does not change even with query changes,
+   * so we might want to pass in the location object from history listener.
+   */
+  getData(location?: H.Location): void;
   setData(data?: Partial<Data>): void;
   setDataError(error?: Error): void;
   setIsLoadingData(isLoadingData?: boolean): void;
@@ -86,7 +91,10 @@ export function urlDataSyncHOC<Data>(
   }
 
   function getData(props: URLDataSyncInProps<Data>) {
-    const { location, setData } = props;
+    const {
+      history: { location },
+      setData
+    } = props;
 
     return callAPI(
       props,
@@ -122,7 +130,11 @@ export function urlDataSyncHOC<Data>(
     >(props => ({
       getData: () => getData(props),
       saveData: () => {
-        const { data, location, setData } = props;
+        const {
+          data,
+          history: { location },
+          setData
+        } = props;
 
         callAPI(
           props,
@@ -146,29 +158,25 @@ export function urlDataSyncHOC<Data>(
     })),
     lifecycle(
       ((): ReactLifeCycleFunctions<URLDataSyncInProps<Data>, {}> => {
-        let stateSubscription: Subscription | undefined = undefined;
+        let stateListener: (() => void) | undefined = undefined;
 
         return {
           componentDidMount() {
             const { history, getData } = this.props;
-            const syncRepository = getSyncRepository(this.props);
 
-            stateSubscription = syncRepository.onURLStateChange(
-              history,
-              (...[, action]) => {
-                switch (action) {
-                  case "REPLACE":
-                    getData();
-                    break;
+            stateListener = history.listen((...[, action]) => {
+              switch (action) {
+                case "REPLACE":
+                  getData();
+                  break;
 
-                  default:
-                    break;
-                }
+                default:
+                  break;
               }
-            );
+            });
           },
           componentWillUnmount() {
-            !!stateSubscription && stateSubscription.unsubscribe();
+            !!stateListener && stateListener();
           }
         };
       })()

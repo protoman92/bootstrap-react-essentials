@@ -37,10 +37,6 @@ export function createURLDataSyncRepository(
 
       return client.fetch(config);
     },
-    onURLStateChange: (history, cb) => {
-      const unsubscribe = history.listen(cb);
-      return { unsubscribe };
-    },
     update: (location, data, overrideConfig) => {
       const config = prepareConfig(
         {

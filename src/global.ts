@@ -1,36 +1,10 @@
 import { AxiosRequestConfig } from "axios";
-import H from "history";
 import { ComponentType } from "react";
 import { Action } from "redux";
 import { StrictOmit } from "ts-essentials";
-import { getURLComponents, getURLQuery, replaceURLQuery } from "./utils";
-
-declare module "recompose" {}
+import { getURLComponents, getURLQuery } from "./utils";
 
 declare global {
-  namespace HistoryWithCallbacks {
-    type StateChangeCallback = (
-      event: "pushState" | "replaceState",
-      data: any,
-      title: string,
-      url?: string | null
-    ) => void;
-  }
-
-  interface HistoryWithCallbacks extends History {
-    onStateChange(fn: HistoryWithCallbacks.StateChangeCallback): Subscription;
-  }
-
-  interface Window {
-    historyWithCallbacks: HistoryWithCallbacks;
-  }
-}
-
-declare global {
-  interface Workarounds {
-    apply(): void;
-  }
-
   interface Subscription {
     unsubscribe(): void;
   }
@@ -76,11 +50,6 @@ declare global {
         location: Parameters<typeof getURLComponents>[0],
         override?: URLDataSync.OverrideConfig
       ): Promise<T>;
-
-      onURLStateChange(
-        history: Pick<H.History, "listen">,
-        cb: H.LocationListener
-      ): Subscription;
 
       update<T>(
         location: Parameters<typeof getURLQuery>[0],
