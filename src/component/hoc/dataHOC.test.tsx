@@ -23,7 +23,7 @@ describe("Auto URL data sync", () => {
   const TestComponent = createTestComponent<URLDataSyncInProps<Data>>();
 
   let EnhancedComponent: ComponentType<
-    Pick<URLDataSyncOutProps, "queryParametersToObserve" | "syncRepository">
+    Pick<URLDataSyncOutProps, "queryParametersToWatch" | "syncRepository">
   >;
 
   let WrappedElement: JSX.Element;
@@ -180,7 +180,7 @@ describe("Auto URL data sync", () => {
 
     WrappedElement = (
       <Router history={history}>
-        <EnhancedComponent queryParametersToObserve={["a", "b", "c"]} />
+        <EnhancedComponent queryParametersToWatch={["a", "b", "c"]} />
       </Router>
     );
 
@@ -222,7 +222,7 @@ describe("Auto URL data sync", () => {
     // Setup
     WrappedElement = (
       <Router history={history}>
-        <EnhancedComponent queryParametersToObserve={[]} />
+        <EnhancedComponent queryParametersToWatch={[]} />
       </Router>
     );
 
