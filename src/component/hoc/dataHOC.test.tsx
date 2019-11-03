@@ -23,7 +23,7 @@ describe("Auto URL data sync", () => {
   const TestComponent = createTestComponent<URLDataSyncInProps<Data>>();
 
   let EnhancedComponent: ComponentType<
-    Pick<URLDataSyncOutProps, "syncRepository">
+    Pick<URLDataSyncOutProps, "queryParametersToObserve" | "syncRepository">
   >;
 
   let WrappedElement: JSX.Element;
@@ -172,6 +172,71 @@ describe("Auto URL data sync", () => {
     // Then
     verify(repository.get(anything(), deepEqual({ url: "/path1" }))).never();
     verify(repository.get(anything(), deepEqual({ url: "/path2" }))).once();
+  });
+
+  it("Should only get data if observed query param values change", async () => {
+    // Setup
+    history.replace("/path1?d=1");
+
+    WrappedElement = (
+      <Router history={history}>
+        <EnhancedComponent queryParametersToObserve={["a", "b", "c"]} />
+      </Router>
+    );
+
+    mount(WrappedElement);
+
+    // When
+    history.replace("/path1?d=1");
+    history.replace("/path2?a=1");
+    history.replace("/path2?a=1&b=2");
+    history.replace("/path2?a=1&b=2&c=3");
+    history.replace("/path2?a=1&b=2&c=3");
+    history.replace("/path2?a=1&b=2&c=3");
+    history.replace("/path2?a=1&b=2&c=3");
+    history.replace("/path2?a=1&b=2&c=3");
+    await asyncTimeout(1);
+
+    // Then
+    verify(repository.get(anything(), deepEqual({ url: "/path1" }))).never();
+    verify(repository.get(anything(), deepEqual({ url: "/path2" }))).times(3);
+  });
+
+  it("Should get data every time if observed query params not specified", async () => {
+    // Setup
+    mount(WrappedElement);
+
+    // When
+    history.replace("/path1?d=1");
+    history.replace("/path2?a=1");
+    history.replace("/path2?a=1");
+    history.replace("/path2?a=1");
+    await asyncTimeout(1);
+
+    // Then
+    verify(repository.get(anything(), deepEqual({ url: "/path1" }))).once();
+    verify(repository.get(anything(), deepEqual({ url: "/path2" }))).times(3);
+  });
+
+  it("Should not refetch data every time if empty-array query params", async () => {
+    // Setup
+    WrappedElement = (
+      <Router history={history}>
+        <EnhancedComponent queryParametersToObserve={[]} />
+      </Router>
+    );
+
+    mount(WrappedElement);
+
+    // When
+    history.replace("/path1?d=1");
+    history.replace("/path2?a=1");
+    history.replace("/path2?a=1");
+    history.replace("/path2?a=1");
+    await asyncTimeout(1);
+
+    // Then
+    verify(repository.get(anything(), anything())).never();
   });
 
   it("Should use injected sync repository if possible", async () => {

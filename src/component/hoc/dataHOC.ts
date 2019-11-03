@@ -9,7 +9,11 @@ import {
 import withStateHandlers from "recompose/withStateHandlers";
 import { StrictOmit } from "ts-essentials";
 import defaultRepository from "../../repository/dataRepository";
-import { appendURLQuery as defaultAppendURLQuery } from "../../utils";
+import {
+  appendURLQuery as defaultAppendURLQuery,
+  getURLQuery
+} from "../../utils";
+import deepEqual = require("deep-equal");
 
 function or<T>(value1: T | undefined, value2: T) {
   return value1 !== undefined && value1 !== null ? value1 : value2;
@@ -24,6 +28,14 @@ export interface URLDataSyncInProps<Data>
   readonly isLoadingData: boolean;
 
   /**
+   * Specify the query parameter keys to observe. Only the values for these
+   * keys are changed do we force a refetch. Leave undefined if we want all
+   * keys to be observed, or an empty array if we do not want any key to be
+   * observed.
+   */
+  readonly queryParametersToWatch?: readonly string[];
+
+  /**
    * The location prop from withRouter does not change even with query changes,
    * so we might want to pass in the location object from history listener.
    */
@@ -36,7 +48,10 @@ export interface URLDataSyncInProps<Data>
 }
 
 export interface URLDataSyncOutProps
-  extends Pick<RouteComponentProps<any>, "history" | "location"> {
+  extends Pick<
+    URLDataSyncInProps<any>,
+    "history" | "location" | "queryParametersToWatch"
+  > {
   overrideConfiguration?: StrictOmit<
     HTTPClient.Config,
     "data" | "method" | "params"
@@ -58,7 +73,8 @@ export interface URLDataSyncOutProps
  */
 export function urlDataSyncHOC<Data>(
   syncRepository: typeof defaultRepository = defaultRepository,
-  overrideConfig: URLDataSyncOutProps["overrideConfiguration"] = {}
+  overrideConfig: URLDataSyncOutProps["overrideConfiguration"] = {},
+  queryParamsToObserve: URLDataSyncOutProps["queryParametersToWatch"] = undefined
 ): FunctionalEnhancer<URLDataSyncInProps<Data>, URLDataSyncOutProps> {
   function getSyncRepository({
     syncRepository: injectedRepository = syncRepository
@@ -70,6 +86,12 @@ export function urlDataSyncHOC<Data>(
     overrideConfiguration = overrideConfig
   }: URLDataSyncOutProps): typeof overrideConfig {
     return overrideConfiguration;
+  }
+
+  function getQueryParametersToWatch({
+    queryParametersToWatch = queryParamsToObserve
+  }: URLDataSyncOutProps): typeof queryParamsToObserve {
+    return queryParametersToWatch;
   }
 
   async function callAPI<T>(
@@ -163,11 +185,23 @@ export function urlDataSyncHOC<Data>(
         return {
           componentDidMount() {
             const { history, getData } = this.props;
+            let oldQuery = getURLQuery(history.location);
 
-            stateListener = history.listen((...[, action]) => {
+            stateListener = history.listen((location, action) => {
               switch (action) {
                 case "REPLACE":
-                  getData();
+                  let shouldRefetch = true;
+                  const newQuery = getURLQuery(location);
+                  const observeParams = getQueryParametersToWatch(this.props);
+
+                  if (!!observeParams) {
+                    shouldRefetch = observeParams.some(
+                      key => !deepEqual(newQuery[key], oldQuery[key])
+                    );
+                  }
+
+                  oldQuery = newQuery;
+                  if (!!shouldRefetch) getData();
                   break;
 
                 default:
