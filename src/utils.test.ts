@@ -93,4 +93,21 @@ describe("Utilities", () => {
     verify(history.replace("?c=10")).once();
     verify(history.replace("?a=0&b=1")).once();
   });
+
+  it("Append URL query with undefined values should remove keys", async () => {
+    // Setup
+    const history = spy<H.History>(
+      constructObject<H.History>({ replace: () => {} })
+    );
+
+    // When
+    appendURLQuery(
+      instance(history),
+      { pathname: "", search: "?a=0" },
+      { a: undefined, b: "1" }
+    );
+
+    // Then
+    verify(history.replace("?b=1")).once();
+  });
 });

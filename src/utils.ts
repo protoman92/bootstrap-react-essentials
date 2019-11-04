@@ -50,6 +50,8 @@ export function appendURLQuery(
   Object.entries(urlQuery).forEach(([key, value]) => {
     if (value !== undefined) {
       existingURLQuery[key] = toArray(value);
+    } else {
+      delete existingURLQuery[key];
     }
   });
 
