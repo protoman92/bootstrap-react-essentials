@@ -260,7 +260,7 @@ describe("Auto URL data sync", () => {
     });
 
     // When
-    const WrappedElement = (
+    WrappedElement = (
       <BrowserRouter>
         <EnhancedComponent syncRepository={instance(injectedRepository)} />
       </BrowserRouter>

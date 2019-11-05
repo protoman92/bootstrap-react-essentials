@@ -189,7 +189,7 @@ export function urlDataSyncHOC<Data>(
 
         return {
           componentDidMount() {
-            const { history, getData } = this.props;
+            const { history } = this.props;
             let oldQuery = getURLQuery(history.location);
 
             stateListener = history.listen((location, action) => {
@@ -206,7 +206,7 @@ export function urlDataSyncHOC<Data>(
                   }
 
                   oldQuery = newQuery;
-                  if (!!shouldRefetch) getData();
+                  if (!!shouldRefetch) this.props.getData();
                   break;
 
                 default:
