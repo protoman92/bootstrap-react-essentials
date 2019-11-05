@@ -23,7 +23,10 @@ describe("Auto URL data sync", () => {
   const TestComponent = createTestComponent<URLDataSyncInProps<Data>>();
 
   let EnhancedComponent: ComponentType<
-    Pick<URLDataSyncOutProps, "queryParametersToWatch" | "syncRepository">
+    Pick<
+      URLDataSyncOutProps,
+      "onDataSynchronized" | "queryParametersToWatch" | "syncRepository"
+    >
   >;
 
   let WrappedElement: JSX.Element;
@@ -57,11 +60,20 @@ describe("Auto URL data sync", () => {
   it("Should perform get correctly", async () => {
     // Setup
     const data: Data = { a: 0, b: 1, c: 2 };
+    const onDataSynchronized = jest.fn();
     when(repository.get(anything(), anything())).thenResolve(data);
 
-    // When
+    WrappedElement = (
+      <Router history={history}>
+        <EnhancedComponent onDataSynchronized={onDataSynchronized} />
+      </Router>
+    );
+
     history.push("/pathname");
     const wrapper = mount(WrappedElement);
+
+    // When
+
     const { getData } = wrapper.find(TestComponent).props();
     getData();
     await asyncTimeout(1);
@@ -73,6 +85,7 @@ describe("Auto URL data sync", () => {
     verify(repository.get(anything(), deepEqual({ url: "/pathname" }))).once();
     expect(isLoadingData).toBeFalsy();
     expect(result).toEqual(data);
+    expect(onDataSynchronized).toHaveBeenCalledWith(data);
   });
 
   it("Should perform save correctly", async () => {

@@ -1,6 +1,6 @@
 {
   "name": "bootstrap-react-essentials",
-  "version": "3.9.1",
+  "version": "3.10.0",
   "description": "Library of essentials for a bootstrapped React project",
   "scripts": {
     "build": "tsc",
@@ -43,7 +43,7 @@
     "ts-essentials": "^3.0.0",
     "ts-jest": "^24.0.2",
     "ts-mockito": "^2.3.1",
-    "typescript": "^3.5.2"
+    "typescript": "^3.7.1-rc"
   },
   "dependencies": {
     "axios": "^0.19.0",

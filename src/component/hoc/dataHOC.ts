@@ -40,6 +40,7 @@ export interface URLDataSyncInProps<Data>
    * so we might want to pass in the location object from history listener.
    */
   getData(location?: H.Location): void;
+  onDataSynchronized?(newData: Partial<Data>): void;
   setData(data?: Partial<Data>): void;
   setDataError(error?: Error): void;
   setIsLoadingData(isLoadingData?: boolean): void;
@@ -50,7 +51,7 @@ export interface URLDataSyncInProps<Data>
 export interface URLDataSyncOutProps
   extends Pick<
     URLDataSyncInProps<any>,
-    "history" | "location" | "queryParametersToWatch"
+    "history" | "location" | "onDataSynchronized" | "queryParametersToWatch"
   > {
   overrideConfiguration?: StrictOmit<
     HTTPClient.Config,
@@ -115,6 +116,7 @@ export function urlDataSyncHOC<Data>(
   function getData(props: URLDataSyncInProps<Data>) {
     const {
       history: { location },
+      onDataSynchronized,
       setData
     } = props;
 
@@ -129,7 +131,10 @@ export function urlDataSyncHOC<Data>(
           ...overrideConfig
         });
       },
-      setData
+      data => {
+        setData(data);
+        onDataSynchronized && onDataSynchronized(data);
+      }
     );
   }
 
