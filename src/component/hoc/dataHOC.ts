@@ -48,9 +48,9 @@ export interface URLDataSyncInProps<Data>
   updateData(data: Partial<Data>): void;
 }
 
-export interface URLDataSyncOutProps
+export interface URLDataSyncOutProps<Data>
   extends Pick<
-    URLDataSyncInProps<any>,
+    URLDataSyncInProps<Data>,
     "history" | "location" | "onDataSynchronized" | "queryParametersToWatch"
   > {
   overrideConfiguration?: StrictOmit<
@@ -74,24 +74,26 @@ export interface URLDataSyncOutProps
  */
 export function urlDataSyncHOC<Data>(
   syncRepository: typeof defaultRepository = defaultRepository,
-  overrideConfig: URLDataSyncOutProps["overrideConfiguration"] = {},
-  queryParamsToObserve: URLDataSyncOutProps["queryParametersToWatch"] = undefined
-): FunctionalEnhancer<URLDataSyncInProps<Data>, URLDataSyncOutProps> {
+  overrideConfig: URLDataSyncOutProps<Data>["overrideConfiguration"] = {},
+  queryParamsToObserve: URLDataSyncOutProps<
+    Data
+  >["queryParametersToWatch"] = undefined
+): FunctionalEnhancer<URLDataSyncInProps<Data>, URLDataSyncOutProps<Data>> {
   function getSyncRepository({
     syncRepository: injectedRepository = syncRepository
-  }: URLDataSyncOutProps): typeof defaultRepository {
+  }: URLDataSyncOutProps<Data>): typeof defaultRepository {
     return injectedRepository;
   }
 
   function getOverrideConfiguration({
     overrideConfiguration = overrideConfig
-  }: URLDataSyncOutProps): typeof overrideConfig {
+  }: URLDataSyncOutProps<Data>): typeof overrideConfig {
     return overrideConfiguration;
   }
 
   function getQueryParametersToWatch({
     queryParametersToWatch = queryParamsToObserve
-  }: URLDataSyncOutProps): typeof queryParamsToObserve {
+  }: URLDataSyncOutProps<Data>): typeof queryParamsToObserve {
     return queryParametersToWatch;
   }
 
@@ -153,7 +155,7 @@ export function urlDataSyncHOC<Data>(
     ),
     withProps<
       Partial<URLDataSyncInProps<Data>>,
-      URLDataSyncInProps<Data> & URLDataSyncOutProps
+      URLDataSyncInProps<Data> & URLDataSyncOutProps<Data>
     >(props => ({
       getData: () => getData(props),
       saveData: () => {
@@ -249,7 +251,8 @@ export interface URLCursorPaginatedSyncInProps<T>
   goToPreviousPage(): void;
 }
 
-export interface URLCursorPaginatedSyncOutProps extends URLDataSyncOutProps {}
+export interface URLCursorPaginatedSyncOutProps<T>
+  extends URLDataSyncOutProps<readonly T[]> {}
 
 /**
  * This HOC automatically manages pagination data sync, and is best used to
@@ -257,11 +260,11 @@ export interface URLCursorPaginatedSyncOutProps extends URLDataSyncOutProps {}
  */
 export function urlCursorPaginatedSyncHOC<T>(
   syncRepository: typeof defaultRepository = defaultRepository,
-  overrideConfig: URLDataSyncOutProps["overrideConfiguration"] = {},
+  overrideConfig: URLDataSyncOutProps<T>["overrideConfiguration"] = {},
   appendURLQuery = defaultAppendURLQuery
 ): FunctionalEnhancer<
   URLCursorPaginatedSyncInProps<T>,
-  URLCursorPaginatedSyncOutProps
+  URLCursorPaginatedSyncOutProps<T>
 > {
   return compose<any, any>(
     urlDataSyncHOC(syncRepository, overrideConfig),

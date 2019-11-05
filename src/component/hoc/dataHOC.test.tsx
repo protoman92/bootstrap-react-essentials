@@ -24,7 +24,7 @@ describe("Auto URL data sync", () => {
 
   let EnhancedComponent: ComponentType<
     Pick<
-      URLDataSyncOutProps,
+      URLDataSyncOutProps<Data>,
       "onDataSynchronized" | "queryParametersToWatch" | "syncRepository"
     >
   >;
