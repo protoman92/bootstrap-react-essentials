@@ -1,4 +1,3 @@
-import H from "history";
 import { RouteComponentProps } from "react-router";
 import {
   compose,
@@ -34,12 +33,7 @@ export interface URLDataSyncInProps<Data>
    * observed.
    */
   readonly queryParametersToWatch?: readonly string[];
-
-  /**
-   * The location prop from withRouter does not change even with query changes,
-   * so we might want to pass in the location object from history listener.
-   */
-  getData(location?: H.Location): void;
+  getData(): void;
   onDataSynchronized?(newData: Partial<Data>): void;
   setData(data?: Partial<Data>): void;
   setDataError(error?: Error): void;
