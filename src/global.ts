@@ -42,7 +42,7 @@ declare global {
 
   namespace Repository {
     namespace URLDataSync {
-      type OverrideConfig = StrictOmit<HTTPClient.Config, "data" | "method">;
+      type OverrideConfig = HTTPClient.Config;
     }
 
     interface URLDataSync {

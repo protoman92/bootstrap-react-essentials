@@ -53,11 +53,7 @@ export interface URLDataSyncOutProps<Data>
     URLDataSyncInProps<Data>,
     "history" | "location" | "onDataSynchronized" | "queryParametersToWatch"
   > {
-  overrideConfiguration?: StrictOmit<
-    HTTPClient.Config,
-    "data" | "method" | "params"
-  >;
-
+  overrideConfiguration?: HTTPClient.Config;
   syncRepository?: typeof defaultRepository;
 }
 
