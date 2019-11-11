@@ -197,7 +197,8 @@ export function urlDataSyncHOC<Data>(
             const { history } = this.props;
             let oldQuery = getURLQuery(history.location);
 
-            stateListener = history.listen(l => {
+            stateListener = history.listen((l, a) => {
+              if (a !== "REPLACE") return;
               let shouldRefetch = true;
               const newQuery = getURLQuery(l);
               const observeParams = getQueryParametersToWatch(this.props);
