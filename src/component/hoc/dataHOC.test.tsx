@@ -73,7 +73,6 @@ describe("Auto URL data sync", () => {
     const wrapper = mount(WrappedElement);
 
     // When
-
     const { getData } = wrapper.find(TestComponent).props();
     getData();
     await asyncTimeout(1);

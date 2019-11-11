@@ -13,6 +13,7 @@ import {
   getURLQuery
 } from "../../utils";
 import deepEqual = require("deep-equal");
+import { Location } from "history";
 
 function or<T>(value1: T | undefined, value2: T) {
   return value1 !== undefined && value1 !== null ? value1 : value2;
@@ -71,13 +72,13 @@ export function urlDataSyncHOC<Data>(
 ): FunctionalEnhancer<URLDataSyncInProps<Data>, URLDataSyncOutProps<Data>> {
   function getSyncRepository({
     syncRepository: injectedRepository = syncRepository
-  }: URLDataSyncOutProps<Data>): typeof defaultRepository {
+  }: Pick<URLDataSyncOutProps<Data>, "syncRepository">) {
     return injectedRepository;
   }
 
   function getOverrideConfiguration({
     overrideConfiguration = overrideConfig
-  }: URLDataSyncOutProps<Data>): typeof overrideConfig {
+  }: Pick<URLDataSyncOutProps<Data>, "overrideConfiguration">) {
     return overrideConfiguration;
   }
 
@@ -88,7 +89,10 @@ export function urlDataSyncHOC<Data>(
   }
 
   async function callAPI<T>(
-    { setDataError, setIsLoadingData }: URLDataSyncInProps<Data>,
+    {
+      setDataError,
+      setIsLoadingData
+    }: Pick<URLDataSyncInProps<Data>, "setDataError" | "setIsLoadingData">,
     callFn: () => Promise<T>,
     successFn: (res: T) => void
   ) {
@@ -105,12 +109,15 @@ export function urlDataSyncHOC<Data>(
     }
   }
 
-  function getData(props: URLDataSyncInProps<Data>) {
-    const {
+  function getData(
+    {
       history: { location },
-      onDataSynchronized,
-      setData
-    } = props;
+      ...props
+    }: URLDataSyncInProps<Data> & URLDataSyncOutProps<Data>,
+    injectedLocation?: typeof location
+  ) {
+    const customLocation = injectedLocation || location;
+    const { onDataSynchronized, setData } = props;
 
     return callAPI(
       props,
@@ -118,8 +125,8 @@ export function urlDataSyncHOC<Data>(
         const syncRepository = getSyncRepository(props);
         const overrideConfig = getOverrideConfiguration(props);
 
-        return syncRepository.get<Data>(location, {
-          url: location.pathname,
+        return syncRepository.get<Data>(customLocation, {
+          url: customLocation.pathname,
           ...overrideConfig
         });
       },
@@ -148,6 +155,8 @@ export function urlDataSyncHOC<Data>(
       URLDataSyncInProps<Data> & URLDataSyncOutProps<Data>
     >(props => ({
       getData: () => getData(props),
+      /** When the history listener triggers, use the newest location. */
+      getDataWithCustomLocation: (l: Location) => getData(props, l),
       saveData: () => {
         const {
           data,
@@ -176,7 +185,11 @@ export function urlDataSyncHOC<Data>(
       }
     })),
     lifecycle(
-      ((): ReactLifeCycleFunctions<URLDataSyncInProps<Data>, {}> => {
+      ((): ReactLifeCycleFunctions<
+        URLDataSyncInProps<Data> &
+          Readonly<{ getDataWithCustomLocation: (l: Location) => void }>,
+        {}
+      > => {
         let stateListener: (() => void) | undefined = undefined;
 
         return {
@@ -184,9 +197,9 @@ export function urlDataSyncHOC<Data>(
             const { history } = this.props;
             let oldQuery = getURLQuery(history.location);
 
-            stateListener = history.listen((location, action) => {
+            stateListener = history.listen(l => {
               let shouldRefetch = true;
-              const newQuery = getURLQuery(location);
+              const newQuery = getURLQuery(l);
               const observeParams = getQueryParametersToWatch(this.props);
 
               if (!!observeParams) {
@@ -196,7 +209,7 @@ export function urlDataSyncHOC<Data>(
               }
 
               oldQuery = newQuery;
-              if (!!shouldRefetch) this.props.getData();
+              if (!!shouldRefetch) this.props.getDataWithCustomLocation(l);
             });
           },
           componentWillUnmount() {
