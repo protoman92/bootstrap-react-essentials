@@ -185,25 +185,18 @@ export function urlDataSyncHOC<Data>(
             let oldQuery = getURLQuery(history.location);
 
             stateListener = history.listen((location, action) => {
-              switch (action) {
-                case "REPLACE":
-                  let shouldRefetch = true;
-                  const newQuery = getURLQuery(location);
-                  const observeParams = getQueryParametersToWatch(this.props);
+              let shouldRefetch = true;
+              const newQuery = getURLQuery(location);
+              const observeParams = getQueryParametersToWatch(this.props);
 
-                  if (!!observeParams) {
-                    shouldRefetch = observeParams.some(
-                      key => !deepEqual(newQuery[key], oldQuery[key])
-                    );
-                  }
-
-                  oldQuery = newQuery;
-                  if (!!shouldRefetch) this.props.getData();
-                  break;
-
-                default:
-                  break;
+              if (!!observeParams) {
+                shouldRefetch = observeParams.some(
+                  key => !deepEqual(newQuery[key], oldQuery[key])
+                );
               }
+
+              oldQuery = newQuery;
+              if (!!shouldRefetch) this.props.getData();
             });
           },
           componentWillUnmount() {

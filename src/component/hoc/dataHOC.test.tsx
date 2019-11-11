@@ -183,7 +183,7 @@ describe("Auto URL data sync", () => {
     await asyncTimeout(1);
 
     // Then
-    verify(repository.get(anything(), deepEqual({ url: "/path1" }))).never();
+    verify(repository.get(anything(), deepEqual({ url: "/path1" }))).once();
     verify(repository.get(anything(), deepEqual({ url: "/path2" }))).once();
   });
 
