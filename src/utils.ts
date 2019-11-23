@@ -30,13 +30,17 @@ export function toArray<T>(value: T | readonly T[]): readonly T[] {
   return value instanceof Array ? value : [value];
 }
 
-export function replaceURLQuery(history: H.History, query: URLQueryMap) {
+export function replaceURLQuery(
+  history: H.History,
+  location: Pick<H.Location, "pathname">,
+  query: URLQueryMap
+) {
   const newQueryMap = Object.entries(query)
     .filter(([, value]) => !!value && !!toArray(value).length)
     .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
 
   let merged = querystring.stringify(newQueryMap);
-  merged = !!merged ? `?${merged}` : "";
+  merged = !!merged ? `?${merged}` : location.pathname;
   history.replace(merged);
 }
 
@@ -55,5 +59,5 @@ export function appendURLQuery(
     }
   });
 
-  replaceURLQuery(history, existingURLQuery);
+  replaceURLQuery(history, location, existingURLQuery);
 }

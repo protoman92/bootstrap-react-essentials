@@ -1,7 +1,6 @@
 import { AxiosRequestConfig } from "axios";
 import { ComponentType } from "react";
 import { Action } from "redux";
-import { StrictOmit } from "ts-essentials";
 import { getURLComponents, getURLQuery } from "./utils";
 
 declare global {
@@ -12,11 +11,11 @@ declare global {
   type FunctionalEnhancer<I, O> = (c: ComponentType<I>) => ComponentType<O>;
 
   type URLQueryMap = Readonly<{
-    [K: string]: readonly (string)[] | string | undefined;
+    [K: string]: readonly string[] | string | undefined;
   }>;
 
   type URLQueryArrayMap = Readonly<{
-    [K: string]: readonly (string)[] | undefined;
+    [K: string]: readonly string[] | undefined;
   }>;
 
   /** Common Redux state type that contains some basic properties. */

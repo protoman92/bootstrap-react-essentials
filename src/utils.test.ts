@@ -45,22 +45,41 @@ describe("Utilities", () => {
     );
 
     const historyInstance = instance(history);
+    const location = { pathname: "" };
 
     // When
-    replaceURLQuery(historyInstance, { a: "1", b: ["2", "3"] });
+    replaceURLQuery(historyInstance, location, { a: "1", b: ["2", "3"] });
 
-    replaceURLQuery(historyInstance, {
+    replaceURLQuery(historyInstance, location, {
       a: Array(0),
       b: Array(0),
       c: "10"
     });
 
-    replaceURLQuery(historyInstance, {});
+    replaceURLQuery(historyInstance, location, {});
 
     // Then
     verify(history.replace("?a=1&b=2&b=3")).once();
     verify(history.replace("?c=10")).once();
     verify(history.replace("")).once();
+  });
+
+  it("Replace URL query with empty search should default to pathname", async () => {
+    // Setup
+    const history = spy<H.History>(
+      constructObject<H.History>({
+        replace: () => {}
+      })
+    );
+
+    const historyInstance = instance(history);
+    const location = { pathname: "/path" };
+
+    // When
+    replaceURLQuery(historyInstance, location, {});
+
+    // Then
+    verify(history.replace("/path")).once();
   });
 
   it("Append URL query with search should work", async () => {
