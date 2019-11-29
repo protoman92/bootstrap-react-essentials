@@ -22,12 +22,13 @@ describe("Auto URL data sync", () => {
 
   const TestComponent = createTestComponent<URLDataSyncInProps<Data>>();
 
-  let EnhancedComponent: ComponentType<
-    Pick<
-      URLDataSyncOutProps<Data>,
-      "onDataSynchronized" | "queryParametersToWatch" | "syncRepository"
-    >
-  >;
+  let EnhancedComponent: ComponentType<Pick<
+    URLDataSyncOutProps<Data>,
+    | "onDataErrorEncountered"
+    | "onDataSynchronized"
+    | "queryParametersToWatch"
+    | "syncRepository"
+  >>;
 
   let WrappedElement: JSX.Element;
   let history: H.History;
@@ -131,8 +132,15 @@ describe("Auto URL data sync", () => {
     // Setup
     const error = new Error("error!");
     when(repository.get(anything(), anything())).thenReject(error);
+    const onDataErrorEncountered = jest.fn();
 
     // When
+    WrappedElement = (
+      <Router history={history}>
+        <EnhancedComponent onDataErrorEncountered={onDataErrorEncountered} />
+      </Router>
+    );
+
     const wrapper = mount(WrappedElement);
     const { getData } = wrapper.find(TestComponent).props();
     await getData();
@@ -143,6 +151,7 @@ describe("Auto URL data sync", () => {
 
     // Then
     expect(dataError).toEqual(error);
+    expect(onDataErrorEncountered).toHaveBeenCalledWith(error);
   });
 
   it("Should set error when saving fails", async () => {

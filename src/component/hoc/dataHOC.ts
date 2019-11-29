@@ -1,3 +1,4 @@
+import { Location } from "history";
 import { RouteComponentProps } from "react-router";
 import {
   compose,
@@ -13,7 +14,6 @@ import {
   getURLQuery
 } from "../../utils";
 import deepEqual = require("deep-equal");
-import { Location } from "history";
 
 function or<T>(value1: T | undefined, value2: T) {
   return value1 !== undefined && value1 !== null ? value1 : value2;
@@ -36,6 +36,7 @@ export interface URLDataSyncInProps<Data>
   readonly queryParametersToWatch?: readonly string[];
   getData(): void;
   onDataSynchronized?(newData: Partial<Data>): void;
+  onDataErrorEncountered?(error: Error): void;
   setData(data?: Partial<Data>): void;
   setDataError(error?: Error): void;
   setIsLoadingData(isLoadingData?: boolean): void;
@@ -46,7 +47,11 @@ export interface URLDataSyncInProps<Data>
 export interface URLDataSyncOutProps<Data>
   extends Pick<
     URLDataSyncInProps<Data>,
-    "history" | "location" | "onDataSynchronized" | "queryParametersToWatch"
+    | "history"
+    | "location"
+    | "onDataErrorEncountered"
+    | "onDataSynchronized"
+    | "queryParametersToWatch"
   > {
   overrideConfiguration?: HTTPClient.Config;
   syncRepository?: typeof defaultRepository;
@@ -90,9 +95,13 @@ export function urlDataSyncHOC<Data>(
 
   async function callAPI<T>(
     {
+      onDataErrorEncountered,
       setDataError,
       setIsLoadingData
-    }: Pick<URLDataSyncInProps<Data>, "setDataError" | "setIsLoadingData">,
+    }: Pick<
+      URLDataSyncInProps<Data>,
+      "onDataErrorEncountered" | "setDataError" | "setIsLoadingData"
+    >,
     callFn: () => Promise<T>,
     successFn: (res: T) => void
   ) {
@@ -104,6 +113,7 @@ export function urlDataSyncHOC<Data>(
       successFn(res);
     } catch (e) {
       setDataError(e);
+      !!onDataErrorEncountered && onDataErrorEncountered(e);
     } finally {
       setIsLoadingData(false);
     }
